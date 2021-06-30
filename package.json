@@ -1,0 +1,29 @@
+{
+  "name": "webmaster",
+  "version": "1.0.0",
+  "description": "Useful tools for webmasters",
+  "main": "./index.js",
+  "preferGlobal": true,
+  "bin": {
+    "wm": "bin/wm"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc -build tsconfig.json",
+    "crawler": "npm run build; node dist/crawler.js",
+    "start": "npm run build; node dist/index.js",
+    "postinstall": "npm install && npm run build"
+  },
+  "keywords": ["terminal", "utilities", "network", "web", "productivity"],
+  "author": "Nir Elbaz",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^8.0.0",
+    "open": "^8.2.1",
+    "ora": "^5.4.1",
+    "puppeteer": "^10.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.3.4"
+  }
+}
