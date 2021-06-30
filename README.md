@@ -1,5 +1,5 @@
-# webmaster
----------------------------
+# wmcli - webmaster cli tools
+-----------------------------
 Useful tools for webmasters
 
 ## Installation
