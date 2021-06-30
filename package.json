@@ -1,5 +1,5 @@
 {
-  "name": "wmcli",
+  "name": "@nire0510/wmcli",
   "version": "1.0.0",
   "description": "Useful tools for webmasters",
   "main": "./index.js",
