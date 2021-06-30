@@ -1,6 +1,6 @@
 {
   "name": "@nire0510/wmcli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Useful tools for webmasters",
   "main": "./index.js",
   "preferGlobal": true,
@@ -12,9 +12,15 @@
     "build": "tsc -build tsconfig.json",
     "crawler": "npm run build; node dist/crawler.js",
     "start": "npm run build; node dist/index.js",
-    "postinstall": "npm install && npm run build"
+    "postinstall": "npm run build"
   },
-  "keywords": ["terminal", "utilities", "network", "web", "productivity"],
+  "keywords": [
+    "terminal",
+    "utilities",
+    "network",
+    "web",
+    "productivity"
+  ],
   "author": "Nir Elbaz",
   "license": "ISC",
   "dependencies": {
