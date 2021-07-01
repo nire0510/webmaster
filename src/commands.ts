@@ -171,6 +171,10 @@ export function stack(domain: string): void {
   browse(`https://builtwith.com/${domain}`);
 }
 
+export function structured(url: string): void {
+  browse(`https://search.google.com/test/rich-results?utm_campaign=sdtt&utm_medium=message&url=${url}&user_agent=1`);
+}
+
 export async function text(url: string, options: any) {
   const file = utils.generateTempFilePath(url, 'html');
 

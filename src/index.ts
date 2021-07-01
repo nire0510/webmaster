@@ -85,6 +85,12 @@ program
   .action(commands.stack);
 
 program
+  .command('structured')
+  .description('test web page structured data')
+  .argument('<url>', 'web page url', validator.isUrl)
+  .action(commands.structured);
+
+program
   .command('text')
   .description('view web page text')
   .argument('<url>', 'web page url', validator.isUrl)
