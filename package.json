@@ -11,7 +11,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -build tsconfig.json",
     "prepublish": "npm run build",
-    "preinstall": "npm install"
+    "postinstall": "npm install"
   },
   "keywords": [
     "terminal",
