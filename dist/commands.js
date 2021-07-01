@@ -31,7 +31,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.trace = exports.text = exports.stack = exports.source = exports.screenshot = exports.robots = exports.pdf = exports.pagespeed = exports.links = exports.ip = exports.info = exports.images = exports.headers = exports.archive = void 0;
+exports.validate = exports.trace = exports.text = exports.structured = exports.stack = exports.source = exports.screenshot = exports.robots = exports.pdf = exports.pagespeed = exports.links = exports.ip = exports.info = exports.images = exports.headers = exports.archive = void 0;
 const open_1 = __importDefault(require("open"));
 const ora_1 = __importDefault(require("ora"));
 const crawler_1 = __importDefault(require("./crawler"));
@@ -198,6 +198,10 @@ function stack(domain) {
     browse(`https://builtwith.com/${domain}`);
 }
 exports.stack = stack;
+function structured(url) {
+    browse(`https://search.google.com/test/rich-results?utm_campaign=sdtt&utm_medium=message&url=${url}&user_agent=1`);
+}
+exports.structured = structured;
 function text(url, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const file = utils.generateTempFilePath(url, 'html');
