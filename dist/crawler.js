@@ -54,6 +54,42 @@ class Crawler {
             });
         });
     }
+    intercept(url, type) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const items = yield this.genericCommand((page) => __awaiter(this, void 0, void 0, function* () {
+                const items = [];
+                yield page.setRequestInterception(true);
+                switch (type) {
+                    case 'response':
+                        page.on('response', (response) => __awaiter(this, void 0, void 0, function* () {
+                            items.push({
+                                url: response.url(),
+                                status: response.status(),
+                                statusText: response.statusText(),
+                                headers: response.headers(),
+                            });
+                        }));
+                        break;
+                    case 'request':
+                    default:
+                        page.on('request', (request) => __awaiter(this, void 0, void 0, function* () {
+                            items.push({
+                                url: request.url(),
+                                method: request.method(),
+                                headers: request.headers(),
+                                resourceType: request.resourceType(),
+                                postData: request.postData(),
+                            });
+                            return request.continue();
+                        }));
+                        break;
+                }
+                yield page.goto(url, { waitUntil: 'networkidle2' });
+                return items;
+            }));
+            return items;
+        });
+    }
     pdf(url, path) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.genericCommand((page) => __awaiter(this, void 0, void 0, function* () {

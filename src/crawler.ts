@@ -46,6 +46,45 @@ export default class Crawler {
     });
   }
 
+  async intercept(url: string, type: string): Promise<any[]> {
+    const items = await this.genericCommand(async (page: puppeteer.Page) => {
+      const items: any[] = [];
+
+      await page.setRequestInterception(true);
+      switch (type) {
+        case 'response':
+          page.on('response', async (response: puppeteer.HTTPResponse) => {
+            items.push({
+              url: response.url(),
+              status: response.status(),
+              statusText: response.statusText(),
+              headers: response.headers(),
+            });
+          })
+          break;
+        case 'request':
+        default:
+          page.on('request', async (request: puppeteer.HTTPRequest) => {
+            items.push({
+              url: request.url(),
+              method: request.method(),
+              headers: request.headers(),
+              resourceType: request.resourceType(),
+              postData: request.postData(),
+            });
+
+            return request.continue();
+          });
+          break;
+      }
+      await page.goto(url, { waitUntil: 'networkidle2' });
+
+      return items;
+    });
+
+    return items;
+  }
+
   async pdf(url: string, path: string) {
     await this.genericCommand(async (page: puppeteer.Page) => {
       await page.goto(url, { waitUntil: 'networkidle2' });

@@ -3,6 +3,18 @@ import { exec } from 'child_process';
 import https from 'https';
 import os from 'os';
 
+function readFile(file: string) {
+  return new Promise<string>((resolve, reject) => {
+    fs.readFile(file, 'utf8', function (error, content) {
+      if (error) {
+        return reject(error);
+      }
+
+      resolve(content);
+    });
+  });
+}
+
 /**
  * Returns a temporary file path
  * @param {string} url URL
@@ -11,6 +23,12 @@ import os from 'os';
  */
 export function generateTempFilePath(url: string, ext: string): string {
   return `${os.tmpdir()}/${url.replace(/\W/g, '')}.${ext}`;
+}
+
+export async function generateTableFromTemplate(data: any[]): Promise<string> {
+  const tableMarkup = await readFile('./templates/table.html');
+
+  return tableMarkup.replace('{{data}}', JSON.stringify(data));
 }
 
 export function toTable(data: any[]) {

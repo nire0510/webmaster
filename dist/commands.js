@@ -31,7 +31,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.trace = exports.text = exports.structured = exports.stack = exports.source = exports.screenshot = exports.robots = exports.pdf = exports.pagespeed = exports.links = exports.ip = exports.info = exports.images = exports.headers = exports.archive = void 0;
+exports.validate = exports.trace = exports.text = exports.structured = exports.stack = exports.source = exports.screenshot = exports.robots = exports.pdf = exports.pagespeed = exports.log = exports.links = exports.ip = exports.info = exports.images = exports.headers = exports.archive = void 0;
 const open_1 = __importDefault(require("open"));
 const ora_1 = __importDefault(require("ora"));
 const crawler_1 = __importDefault(require("./crawler"));
@@ -49,6 +49,7 @@ function genericCommand(fnc) {
             yield fnc();
         }
         catch (error) {
+            // console.error(error);
             console.error();
             console.error('An error has occurred. Is URL correct?');
             process.exit(0);
@@ -73,11 +74,7 @@ function headers(url, options) {
                 tagName: element.tagName,
                 content: element.textContent,
             })));
-            const html = headers
-                .map((header) => `<${header.tagName}>${header.content}</${header.tagName}>`)
-                .sort((a, b) => a < b ? -1 : 1)
-                .join('');
-            yield utils.writeFile(file, html);
+            yield utils.writeFile(file, yield utils.generateTableFromTemplate(headers));
             open_1.default(file);
         }));
     });
@@ -88,13 +85,18 @@ function images(url, options) {
         const file = utils.generateTempFilePath(url, 'html');
         yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
             const images = yield crawler.querySelectorAll(url, `${options && options.selector || ''} img`.trim(), (elements) => elements.map((element) => ({
-                src: element.getAttribute('src'),
-                alt: element.getAttribute('alt'),
                 title: element.getAttribute('title'),
+                alt: element.getAttribute('alt'),
+                src: element.getAttribute('src'),
             })));
-            const html = images
-                .map((image) => `<img src="${image.src.startsWith('http') ? '' : url}${image.src}" title="${image.title || image.alt}">`).join('');
-            yield utils.writeFile(file, html);
+            if (options === null || options === void 0 ? void 0 : options.gallery) {
+                const html = images
+                    .map((image) => `<img src="${image.src.startsWith('http') ? '' : url}${image.src}" title="${image.title || image.alt}">`).join('');
+                yield utils.writeFile(file, html);
+            }
+            else {
+                yield utils.writeFile(file, yield utils.generateTableFromTemplate(images));
+            }
             open_1.default(file);
         }));
     });
@@ -104,6 +106,9 @@ function info(domain, options) {
     let url;
     if (options === null || options === void 0 ? void 0 : options.similarweb) {
         url = `https://www.similarweb.com/website/${domain}`;
+    }
+    else if (options === null || options === void 0 ? void 0 : options.alexa) {
+        url = `https://www.alexa.com/siteinfo/${domain}`;
     }
     else {
         url = `https://www.wmtips.com/tools/info/s/${domain}`;
@@ -131,20 +136,29 @@ function links(url, options) {
         const file = utils.generateTempFilePath(url, 'html');
         yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
             const links = yield crawler.querySelectorAll(url, `${options && options.selector || ''} a`.trim(), (elements) => elements.map((element) => ({
-                text: element.textContent,
                 href: element.getAttribute('href'),
+                text: element.textContent,
                 alt: element.getAttribute('alt'),
                 title: element.getAttribute('title'),
             })));
-            const html = links
-                .filter((link) => link.href.startsWith('http') || ['null', 'javascript'].every((string) => !link.href.startsWith(string)))
-                .map((link) => `<a href="${link.href.startsWith('http') ? '' : url}${link.href}">${link.text || link.title || link.alt || '-'}</a><br>`).join('');
-            yield utils.writeFile(file, html);
+            yield utils.writeFile(file, yield utils.generateTableFromTemplate(links));
             open_1.default(file);
         }));
     });
 }
 exports.links = links;
+function log(url, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const file = utils.generateTempFilePath(url, 'html');
+        yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
+            const requests = yield crawler.intercept(url, (options === null || options === void 0 ? void 0 : options.response) ? 'response' : 'request');
+            const urlObject = new URL(url);
+            yield utils.writeFile(file, yield utils.generateTableFromTemplate(requests.map((request) => (Object.assign(Object.assign({}, request), { external: !request.url.startsWith(urlObject.origin) })))));
+            open_1.default(file);
+        }));
+    });
+}
+exports.log = log;
 function pagespeed(url) {
     browse(`https://developers.google.com/speed/pagespeed/insights/?url=${url}`);
 }
@@ -194,8 +208,22 @@ function source(url) {
     });
 }
 exports.source = source;
-function stack(domain) {
-    browse(`https://builtwith.com/${domain}`);
+function stack(domain, options) {
+    let url;
+    if (options === null || options === void 0 ? void 0 : options.netcraft) {
+        url = `https://sitereport.netcraft.com/?url=${domain}`;
+    }
+    else if (options === null || options === void 0 ? void 0 : options.wappalyzer) {
+        url = `https://www.wappalyzer.com/lookup/${domain}`;
+    }
+    else if (options === null || options === void 0 ? void 0 : options.similartech) {
+        url = `https://www.similartech.com/websites/${domain}`;
+    }
+    // builtwith
+    else {
+        url = `https://builtwith.com/${domain}`;
+    }
+    browse(url);
 }
 exports.stack = stack;
 function structured(url) {

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webmaster Data Table</title>
+  <link href="https://unpkg.com/tabulator-tables@4.9.3/dist/css/tabulator.min.css" rel="stylesheet">
+  <link href="https://unpkg.com/tabulator-tables@4.9.3/dist/css/tabulator_midnight.min.css" rel="stylesheet">
+  <style>
+    html, body {
+      background-color: #000;
+      font-family: arial;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <div id="table"></div>
+  </main>
+
+  <script type="text/javascript" src="https://unpkg.com/tabulator-tables@4.9.3/dist/js/tabulator.min.js"></script>
+  </script>
+  <script>
+    const data = {{data}};
+
+    new Tabulator('#table', {
+      autoColumns: true,
+      data,
+      height: '100%',
+      virtualDomHoz: true,
+      dataLoaded: () => {
+		    const firstRow = this.getRows()[0];
+
+        if (firstRow) {
+          firstRow.freeze();
+        }
+      }
+    });
+
+  </script>
+</body>
+
+</html>

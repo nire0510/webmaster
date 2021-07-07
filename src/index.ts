@@ -9,7 +9,7 @@ program
 
 program
   .command('archive')
-  .description('view web page versions')
+  .description('view previous web page versions')
   .argument('<url>', 'web page url', validator.isUrl)
   .action(commands.archive);
 
@@ -25,6 +25,8 @@ program
   .description('view web page images')
   .argument('<url>', 'web page url', validator.isUrl)
   .option('-s, --selector [selector]', 'wrapper css selector')
+  .option('-g, --gallery', 'display images as gallery')
+  .option('-t, --table', 'display images in table (default')
   .action(commands.images);
 
 program
@@ -37,6 +39,7 @@ program
   .command('info')
   .description('view website information')
   .argument('<domain>', 'website domain name', validator.isHostname)
+  .option('-al, --alexa', 'use alexa')
   .option('-sw, --similarweb', 'use similarweb')
   .option('-wm, --wmtips', 'use wmtips (default)')
   .action(commands.info);
@@ -47,6 +50,14 @@ program
   .argument('<url>', 'web page url', validator.isUrl)
   .option('-s --selector [selector]', 'wrapper css selector')
   .action(commands.links);
+
+program
+  .command('log')
+  .description('log web page activity')
+  .argument('<url>', 'web page url', validator.isUrl)
+  .option('-req --requests', 'log http requests')
+  .option('-res --responses', 'log http responses')
+  .action(commands.log);
 
 program
   .command('pagespeed')
@@ -80,8 +91,12 @@ program
 
 program
   .command('stack')
-  .description('view website technology stack')
+  .description('view website technologies')
   .argument('<domain>', 'website domain name', validator.isHostname)
+  .option('-bw, --builtwith', 'use builtwith')
+  .option('-nc, --netcraft', 'use netcraft')
+  .option('-st, --similartech', 'use similartech')
+  .option('-wa, --wappalyzer', 'use wappalyzer')
   .action(commands.stack);
 
 program
@@ -99,7 +114,7 @@ program
 
 program
   .command('trace')
-  .description('trace web page')
+  .description('trace web page loading')
   .argument('<url>', 'web page url', validator.isUrl)
   .action(commands.trace);
 

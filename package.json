@@ -1,6 +1,6 @@
 {
   "name": "@nire0510/wmcli",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Useful tools for webmasters",
   "main": "./index.js",
   "preferGlobal": true,
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc -build tsconfig.json",
+    "build": "tsc -build tsconfig.json; cp -R templates ./dist;",
     "prepublish": "npm run build"
   },
   "keywords": [

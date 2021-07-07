@@ -18,6 +18,7 @@ async function genericCommand(fnc: Function) {
     await fnc();
   }
   catch (error) {
+    // console.error(error);
     console.error();
     console.error('An error has occurred. Is URL correct?');
     process.exit(0);
@@ -42,12 +43,8 @@ export async function headers(url: string, options: any) {
         tagName: element.tagName,
         content: element.textContent,
       })));
-    const html = headers
-      .map((header: any) => `<${header.tagName}>${header.content}</${header.tagName}>`)
-      .sort((a, b) => a < b ? -1 : 1)
-      .join('');
 
-    await utils.writeFile(file, html);
+    await utils.writeFile(file, await utils.generateTableFromTemplate(headers));
     open (file);
   });
 }
@@ -59,14 +56,21 @@ export async function images(url: string, options: any) {
     const images: HTMLElement[] = await crawler.querySelectorAll(url,
       `${options && options.selector || ''} img`.trim(),
       (elements: Element[]) => elements.map((element) => ({
-        src: element.getAttribute('src'),
-        alt: element.getAttribute('alt'),
         title: element.getAttribute('title'),
+        alt: element.getAttribute('alt'),
+        src: element.getAttribute('src'),
       })));
-    const html = images
-      .map((image: any) => `<img src="${image.src.startsWith('http') ? '' : url}${image.src}" title="${image.title || image.alt}">`).join('');
 
-    await utils.writeFile(file, html);
+    if (options?.gallery) {
+      const html = images
+        .map((image: any) => `<img src="${image.src.startsWith('http') ? '' : url}${image.src}" title="${image.title || image.alt}">`).join('');
+
+      await utils.writeFile(file, html);
+    }
+    else {
+      await utils.writeFile(file, await utils.generateTableFromTemplate(images));
+    }
+
     open (file);
   });
 }
@@ -76,6 +80,9 @@ export function info(domain: string, options: any): void {
 
   if (options?.similarweb) {
     url = `https://www.similarweb.com/website/${domain}`;
+  }
+  else if (options?.alexa) {
+    url = `https://www.alexa.com/siteinfo/${domain}`;
   }
   else {
     url = `https://www.wmtips.com/tools/info/s/${domain}`;
@@ -105,16 +112,28 @@ export async function links(url: string, options: any): Promise<void> {
     const links: HTMLElement[] = await crawler.querySelectorAll(url,
       `${options && options.selector || ''} a`.trim(),
       (elements: Element[]) => elements.map((element) => ({
-        text: element.textContent,
         href: element.getAttribute('href'),
+        text: element.textContent,
         alt: element.getAttribute('alt'),
         title: element.getAttribute('title'),
       })));
-    const html = links
-      .filter((link: any) => link.href.startsWith('http') || ['null', 'javascript'].every((string) => !link.href.startsWith(string)))
-      .map((link: any) => `<a href="${link.href.startsWith('http') ? '' : url}${link.href}">${link.text || link.title || link.alt || '-'}</a><br>`).join('');
 
-    await utils.writeFile(file, html);
+    await utils.writeFile(file, await utils.generateTableFromTemplate(links));
+    open (file);
+  });
+}
+
+export async function log(url: string, options: any): Promise<void> {
+  const file = utils.generateTempFilePath(url, 'html');
+
+  await genericCommand(async () => {
+    const requests = await crawler.intercept(url, options?.response ? 'response' : 'request');
+    const urlObject = new URL(url);
+
+    await utils.writeFile(file, await utils.generateTableFromTemplate(requests.map((request) => ({
+      ...request,
+      external: !request.url.startsWith(urlObject.origin),
+    }))));
     open (file);
   });
 }
@@ -167,8 +186,24 @@ export async function source(url: string): Promise<void> {
   });
 }
 
-export function stack(domain: string): void {
-  browse(`https://builtwith.com/${domain}`);
+export function stack(domain: string, options: any): void {
+  let url;
+
+  if (options?.netcraft) {
+    url = `https://sitereport.netcraft.com/?url=${domain}`;
+  }
+  else if (options?.wappalyzer) {
+    url = `https://www.wappalyzer.com/lookup/${domain}`;
+  }
+  else if (options?.similartech) {
+    url = `https://www.similartech.com/websites/${domain}`;
+  }
+  // builtwith
+  else {
+    url = `https://builtwith.com/${domain}`;
+  }
+
+  browse(url);
 }
 
 export function structured(url: string): void {
