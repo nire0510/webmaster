@@ -1,6 +1,6 @@
 {
   "name": "@nire0510/wmcli",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Useful tools for webmasters",
   "main": "./index.js",
   "preferGlobal": true,
@@ -13,11 +13,15 @@
     "prepublish": "npm run build"
   },
   "keywords": [
+    "development",
+    "network",
+    "performance",
+    "productivity",
+    "seo",
     "terminal",
     "utilities",
-    "network",
     "web",
-    "productivity"
+    "webmaster"
   ],
   "author": "Nir Elbaz",
   "license": "ISC",
