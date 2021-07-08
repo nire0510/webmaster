@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webmaster Word Cloud</title>
+  <style>
+    html,
+    body {
+      background-color: #000;
+      font-family: arial;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      padding: 0;
+      width: 100vw;
+    }
+
+  </style>
+</head>
+
+<body>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js"></script>
+  <script>
+    const fill = d3.scale.category20();
+    const data = [];
+    const height = document.body.clientHeight;
+    const width = document.body.clientWidth;
+
+    function draw(words) {
+      d3.select('body')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .append('g')
+        .attr('transform', `translate(${width / 2}, ${height / 2})`)
+        .selectAll('text')
+        .data(data)
+        .enter()
+        .append('text')
+        .style('font-size', (d) => `${d.count * 4 + 10}px`)
+        .style('font-family', 'Arial')
+        .style('fill', (d, i) => fill(i))
+        .attr('text-anchor', 'middle')
+        .attr('transform', (d) => 'translate(' + [d.x, d.y] + ') rotate(' + d.rotate + ')')
+        .text((d) => d.word);
+    }
+
+    data.forEach((d) => {
+      d.count = +d.count;
+    });
+
+    d3.layout.cloud()
+      .size([width, height])
+      .words(data)
+      .padding(5)
+      .rotate(() => ~~(Math.random() * 2) * 90)
+      .fontSize((d) => Math.max(8, Math.min(d.count, 24)))
+      .on('end', draw)
+      .start();
+
+  </script>
+</body>
+
+</html>
