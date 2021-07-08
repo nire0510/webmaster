@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.execute = exports.writeFile = exports.isUrlExists = exports.toTable = exports.generateTableFromTemplate = exports.generateTempFilePath = void 0;
+exports.countWords = exports.execute = exports.writeFile = exports.isUrlExists = exports.toTable = exports.generateFileFromTemplate = exports.generateTempFilePath = void 0;
 const fs_1 = __importDefault(require("fs"));
 const child_process_1 = require("child_process");
 const https_1 = __importDefault(require("https"));
@@ -37,13 +37,13 @@ function generateTempFilePath(url, ext) {
     return `${os_1.default.tmpdir()}/${url.replace(/\W/g, '')}.${ext}`;
 }
 exports.generateTempFilePath = generateTempFilePath;
-function generateTableFromTemplate(data) {
+function generateFileFromTemplate(template, data = []) {
     return __awaiter(this, void 0, void 0, function* () {
-        const tableMarkup = yield readFile('./templates/table.html');
-        return tableMarkup.replace('{{data}}', JSON.stringify(data));
+        const markup = yield readFile(`./templates/${template}.html`);
+        return markup.replace('[]', JSON.stringify(data));
     });
 }
-exports.generateTableFromTemplate = generateTableFromTemplate;
+exports.generateFileFromTemplate = generateFileFromTemplate;
 function toTable(data) {
     const headers = Object.keys(data[0]).map((key) => `<th>${key}</th>`).join('');
     const rows = data.map((item) => `<tr>` + Object.keys(item).map((key) => `<td>${item[key]}</td>`).join('') + `</tr>`).join('');
@@ -89,3 +89,21 @@ function execute(command) {
     });
 }
 exports.execute = execute;
+function countWords(content) {
+    const output = {};
+    content
+        .toLowerCase()
+        .replace(/[.,]/g, '')
+        .split(/\s+/)
+        .reduce((output, word) => {
+        if (output[word]) {
+            output[word]++;
+        }
+        else {
+            output[word] = 1;
+        }
+        return output;
+    }, output);
+    return output;
+}
+exports.countWords = countWords;

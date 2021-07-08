@@ -25,10 +25,10 @@ export function generateTempFilePath(url: string, ext: string): string {
   return `${os.tmpdir()}/${url.replace(/\W/g, '')}.${ext}`;
 }
 
-export async function generateTableFromTemplate(data: any[]): Promise<string> {
-  const tableMarkup = await readFile('./templates/table.html');
+export async function generateFileFromTemplate(template: string, data: any[] = []): Promise<string> {
+  const markup = await readFile(`./templates/${template}.html`);
 
-  return tableMarkup.replace('{{data}}', JSON.stringify(data));
+  return markup.replace('[]', JSON.stringify(data));
 }
 
 export function toTable(data: any[]) {
@@ -74,4 +74,25 @@ export function execute(command: string): Promise<string> {
       return resolve(stdout);
     });
   })
+}
+
+export function countWords(content: string): { [key: string]: number } {
+  const output = {};
+
+  content
+    .toLowerCase()
+    .replace(/[.,]/g, '')
+    .split(/\s+/)
+    .reduce((output: { [key: string]: number }, word: string) => {
+      if (output[word]) {
+        output[word]++;
+      }
+      else {
+        output[word] = 1;
+      }
+
+      return output;
+    }, output);
+
+  return output;
 }

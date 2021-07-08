@@ -31,7 +31,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.trace = exports.text = exports.structured = exports.stack = exports.source = exports.screenshot = exports.robots = exports.pdf = exports.pagespeed = exports.log = exports.links = exports.ip = exports.info = exports.images = exports.headers = exports.archive = void 0;
+exports.validate = exports.trace = exports.text = exports.stack = exports.source = exports.screenshot = exports.robots = exports.pdf = exports.log = exports.links = exports.ip = exports.info = exports.images = exports.headers = exports.audit = exports.archive = void 0;
 const open_1 = __importDefault(require("open"));
 const ora_1 = __importDefault(require("ora"));
 const crawler_1 = __importDefault(require("./crawler"));
@@ -66,6 +66,17 @@ function archive(url) {
     });
 }
 exports.archive = archive;
+function audit(url, options) {
+    if (options === null || options === void 0 ? void 0 : options.seoptimer) {
+        url = `https://www.seoptimer.com/${url}`;
+    }
+    // pagespeed
+    else {
+        url = `https://developers.google.com/speed/pagespeed/insights/?url=${url}`;
+    }
+    browse(url);
+}
+exports.audit = audit;
 function headers(url, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const file = utils.generateTempFilePath(url, 'html');
@@ -74,7 +85,7 @@ function headers(url, options) {
                 tagName: element.tagName,
                 content: element.textContent,
             })));
-            yield utils.writeFile(file, yield utils.generateTableFromTemplate(headers));
+            yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', headers));
             open_1.default(file);
         }));
     });
@@ -95,7 +106,7 @@ function images(url, options) {
                 yield utils.writeFile(file, html);
             }
             else {
-                yield utils.writeFile(file, yield utils.generateTableFromTemplate(images));
+                yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', images));
             }
             open_1.default(file);
         }));
@@ -141,7 +152,7 @@ function links(url, options) {
                 alt: element.getAttribute('alt'),
                 title: element.getAttribute('title'),
             })));
-            yield utils.writeFile(file, yield utils.generateTableFromTemplate(links));
+            yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', links));
             open_1.default(file);
         }));
     });
@@ -153,16 +164,12 @@ function log(url, options) {
         yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
             const requests = yield crawler.intercept(url, (options === null || options === void 0 ? void 0 : options.response) ? 'response' : 'request');
             const urlObject = new URL(url);
-            yield utils.writeFile(file, yield utils.generateTableFromTemplate(requests.map((request) => (Object.assign(Object.assign({}, request), { external: !request.url.startsWith(urlObject.origin) })))));
+            yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', requests.map((request) => (Object.assign(Object.assign({}, request), { external: !request.url.startsWith(urlObject.origin) })))));
             open_1.default(file);
         }));
     });
 }
 exports.log = log;
-function pagespeed(url) {
-    browse(`https://developers.google.com/speed/pagespeed/insights/?url=${url}`);
-}
-exports.pagespeed = pagespeed;
 function pdf(url) {
     return __awaiter(this, void 0, void 0, function* () {
         const file = utils.generateTempFilePath(url, 'pdf');
@@ -226,16 +233,23 @@ function stack(domain, options) {
     browse(url);
 }
 exports.stack = stack;
-function structured(url) {
-    browse(`https://search.google.com/test/rich-results?utm_campaign=sdtt&utm_medium=message&url=${url}&user_agent=1`);
-}
-exports.structured = structured;
 function text(url, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const file = utils.generateTempFilePath(url, 'html');
         yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
             const text = yield crawler.querySelector(url, `${options && options.selector || 'body'}`.trim(), (element) => element.innerText);
-            yield utils.writeFile(file, text.replace(/\n/g, '<br>'));
+            if (options === null || options === void 0 ? void 0 : options.wordCloud) {
+                const wordCount = utils.countWords(text);
+                const wordCountArray = Object.keys(wordCount)
+                    .map((word) => ({
+                    word,
+                    count: wordCount[word],
+                }));
+                yield utils.writeFile(file, yield utils.generateFileFromTemplate('cloud', wordCountArray));
+            }
+            else {
+                yield utils.writeFile(file, text.replace(/\n/g, '<br>'));
+            }
             open_1.default(file);
         }));
     });
@@ -260,6 +274,9 @@ function validate(url, options) {
     }
     else if (options === null || options === void 0 ? void 0 : options.links) {
         url = `https://validator.w3.org/checklink?uri=${url}`;
+    }
+    else if (options === null || options === void 0 ? void 0 : options.structured) {
+        url = `https://search.google.com/test/rich-results?utm_campaign=sdtt&utm_medium=message&url=${url}&user_agent=1`;
     }
     // html
     else {

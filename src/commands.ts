@@ -33,6 +33,18 @@ export async function archive(url: string): Promise<void> {
   browse(`https://web.archive.org/web/*/${url}`);
 }
 
+export function audit(url: string, options: any): void {
+  if (options?.seoptimer) {
+    url = `https://www.seoptimer.com/${url}`;
+  }
+  // pagespeed
+  else {
+    url = `https://developers.google.com/speed/pagespeed/insights/?url=${url}`;
+  }
+
+  browse(url);
+}
+
 export async function headers(url: string, options: any) {
   const file = utils.generateTempFilePath(url, 'html');
 
@@ -44,7 +56,7 @@ export async function headers(url: string, options: any) {
         content: element.textContent,
       })));
 
-    await utils.writeFile(file, await utils.generateTableFromTemplate(headers));
+    await utils.writeFile(file, await utils.generateFileFromTemplate('table', headers));
     open (file);
   });
 }
@@ -68,7 +80,7 @@ export async function images(url: string, options: any) {
       await utils.writeFile(file, html);
     }
     else {
-      await utils.writeFile(file, await utils.generateTableFromTemplate(images));
+      await utils.writeFile(file, await utils.generateFileFromTemplate('table', images));
     }
 
     open (file);
@@ -118,7 +130,7 @@ export async function links(url: string, options: any): Promise<void> {
         title: element.getAttribute('title'),
       })));
 
-    await utils.writeFile(file, await utils.generateTableFromTemplate(links));
+    await utils.writeFile(file, await utils.generateFileFromTemplate('table', links));
     open (file);
   });
 }
@@ -130,16 +142,12 @@ export async function log(url: string, options: any): Promise<void> {
     const requests = await crawler.intercept(url, options?.response ? 'response' : 'request');
     const urlObject = new URL(url);
 
-    await utils.writeFile(file, await utils.generateTableFromTemplate(requests.map((request) => ({
+    await utils.writeFile(file, await utils.generateFileFromTemplate('table', requests.map((request) => ({
       ...request,
       external: !request.url.startsWith(urlObject.origin),
     }))));
     open (file);
   });
-}
-
-export function pagespeed(url: string): void {
-  browse(`https://developers.google.com/speed/pagespeed/insights/?url=${url}`);
 }
 
 export async function pdf(url: string) {
@@ -206,10 +214,6 @@ export function stack(domain: string, options: any): void {
   browse(url);
 }
 
-export function structured(url: string): void {
-  browse(`https://search.google.com/test/rich-results?utm_campaign=sdtt&utm_medium=message&url=${url}&user_agent=1`);
-}
-
 export async function text(url: string, options: any) {
   const file = utils.generateTempFilePath(url, 'html');
 
@@ -218,7 +222,20 @@ export async function text(url: string, options: any) {
       `${options && options.selector || 'body'}`.trim(),
       (element: any) => element.innerText);
 
-    await utils.writeFile(file, text.replace(/\n/g, '<br>'));
+    if (options?.wordCloud) {
+      const wordCount = utils.countWords(text);
+      const wordCountArray = Object.keys(wordCount)
+        .map((word: string) => ({
+          word,
+          count: wordCount[word],
+        }));
+      await utils.writeFile(file, await utils.generateFileFromTemplate('cloud', wordCountArray));
+    }
+    else {
+      await utils.writeFile(file, text.replace(/\n/g, '<br>'));
+    }
+
+
     open (file);
   });
 }
@@ -241,6 +258,9 @@ export function validate(url: string, options: any): void {
   }
   else if (options?.links) {
     url = `https://validator.w3.org/checklink?uri=${url}`;
+  }
+  else if (options?.structured) {
+    url = `https://search.google.com/test/rich-results?utm_campaign=sdtt&utm_medium=message&url=${url}&user_agent=1`;
   }
   // html
   else {

@@ -59,11 +59,13 @@ program
   .option('-res --responses', 'log http responses')
   .action(commands.log);
 
-program
-  .command('pagespeed')
-  .description('run web page speed test')
+  program
+  .command('audit')
+  .description('check website performance and SEO')
   .argument('<url>', 'web page url', validator.isUrl)
-  .action(commands.pagespeed);
+  .option('-ps --pagespeed', 'use google pagespeed')
+  .option('-so --seoptimer', 'use seoptimer')
+  .action(commands.audit);
 
 program
   .command('pdf')
@@ -100,16 +102,11 @@ program
   .action(commands.stack);
 
 program
-  .command('structured')
-  .description('test web page structured data')
-  .argument('<url>', 'web page url', validator.isUrl)
-  .action(commands.structured);
-
-program
   .command('text')
   .description('view web page text')
   .argument('<url>', 'web page url', validator.isUrl)
   .option('-s, --selector [selector]', 'wrapper css selector')
+  .option('-wc, --word-cloud', 'display as word cloud')
   .action(commands.text);
 
 program
@@ -126,6 +123,7 @@ program
   .option('-h, --html', 'html checker (default)')
   .option('-i, --i18n', 'internationalization checker')
   .option('-l, --links', 'broken links checker')
+  .option('-s, --structured', 'sturctured data')
   .action(commands.validate);
 
 program.parse(process.argv);
