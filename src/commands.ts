@@ -1,16 +1,15 @@
 import open from 'open';
 import ora from 'ora';
+import puppeteer from 'puppeteer';
 import Crawler from './crawler';
 import * as utils from './utils';
-
-const crawler = new Crawler();
 
 function browse(url: string): void {
   open(url);
   process.exit(0);
 }
 
-async function genericCommand(fnc: Function) {
+async function genericCommand(crawler: Crawler, fnc: Function) {
   const spinner = ora('wait...');
 
   spinner.start();
@@ -45,42 +44,94 @@ export function audit(url: string, options: any): void {
   browse(url);
 }
 
-export async function headers(url: string, options: any) {
+export async function coverage(url: string, options: any) {
+  const crawler = new Crawler();
   const file = utils.generateTempFilePath(url, 'html');
 
-  await genericCommand(async () => {
-    const headers: HTMLElement[] = await crawler.querySelectorAll(url,
-      `${options && options.selector || ''} h1, h2, h3, h4, h5, h6`.trim(),
-      (elements: Element[]) => elements.map((element) => ({
-        tagName: element.tagName,
-        content: element.textContent,
-      })));
+  await genericCommand(crawler, async () => {
+    const coverage: any[] = await crawler.coverage(url, options?.stylesheet ? 'css' : 'js');
 
-    await utils.writeFile(file, await utils.generateFileFromTemplate('table', headers));
+    const items = coverage.map((entry) => {
+      const item = {
+        'URL': entry.url,
+        'Total Bytes': entry.text.length,
+        'Used Bytes': entry.ranges.reduce((a: number, c: any) => a + c.end - c.start - 1, 0),
+        'Usage': 'N/A',
+      }
+
+      item['Usage'] = `${(item['Used Bytes'] / item['Total Bytes'] * 100).toFixed(2)}%`;
+
+      return item;
+    });
+
+    await utils.writeFile(file, await utils.generateFileFromTemplate('table', items));
     open (file);
   });
 }
 
-export async function images(url: string, options: any) {
+export async function extract(url: string, options: any) {
+  const crawler = new Crawler();
   const file = utils.generateTempFilePath(url, 'html');
 
-  await genericCommand(async () => {
-    const images: HTMLElement[] = await crawler.querySelectorAll(url,
-      `${options && options.selector || ''} img`.trim(),
-      (elements: Element[]) => elements.map((element) => ({
-        title: element.getAttribute('title'),
-        alt: element.getAttribute('alt'),
-        src: element.getAttribute('src'),
-      })));
+  await genericCommand(crawler, async () => {
+    if (options?.headers) {
+      const headers: HTMLElement[] = await crawler.querySelectorAll(url,
+        `${options && options.selector || ''} h1, h2, h3, h4, h5, h6`.trim(),
+        (elements: Element[]) => elements.map((element) => ({
+          'Tag Name': element.tagName,
+          'Content': element.textContent,
+        })));
 
-    if (options?.gallery) {
-      const html = images
-        .map((image: any) => `<img src="${image.src.startsWith('http') ? '' : url}${image.src}" title="${image.title || image.alt}">`).join('');
-
-      await utils.writeFile(file, html);
+      await utils.writeFile(file, await utils.generateFileFromTemplate('table', headers));
     }
+    else if (options?.links) {
+      const links: HTMLElement[] = await crawler.querySelectorAll(url,
+        `${options && options.selector || ''} a`.trim(),
+        (elements: Element[]) => elements.map((element) => ({
+          'Href': element.getAttribute('href'),
+          'Text': element.textContent,
+          'Title': element.getAttribute('title'),
+        })));
+
+      await utils.writeFile(file, await utils.generateFileFromTemplate('table', links));
+    }
+    else if (options?.images || options?.imagesGallery) {
+      const images: HTMLElement[] = await crawler.querySelectorAll(url,
+        `${options && options.selector || ''} img`.trim(),
+        (elements: Element[]) => elements.map((element) => ({
+          'Title': element.getAttribute('title'),
+          'Alternate Text': element.getAttribute('alt'),
+          'Source': element.getAttribute('src'),
+        })));
+
+      if (options?.imagesGallery) {
+        const html = images
+          .map((image: any) => `<img src="${image['Source'].startsWith('http') ? '' : url}${image['Source']}" title="${image['Title'] || image['Alternate Text']}">`).join('');
+
+        await utils.writeFile(file, html);
+      }
+      else {
+        await utils.writeFile(file, await utils.generateFileFromTemplate('table', images));
+      }
+    }
+    // text
     else {
-      await utils.writeFile(file, await utils.generateFileFromTemplate('table', images));
+      const text: string = await crawler.querySelector(url,
+        `${options && options.selector || 'body'}`.trim(),
+        (element: any) => element.innerText);
+
+      if (options?.textCloud) {
+        const wordCount = utils.countWords(text);
+        const wordCountArray = Object.keys(wordCount)
+          .map((word: string) => ({
+            word,
+            count: wordCount[word],
+          }));
+        await utils.writeFile(file, await utils.generateFileFromTemplate('cloud', wordCountArray));
+      }
+      else {
+        await utils.writeFile(file, text.replace(/\n/g, '<br>'));
+      }
     }
 
     open (file);
@@ -117,43 +168,51 @@ export async function ip(domain: string): Promise<void> {
   }
 }
 
-export async function links(url: string, options: any): Promise<void> {
-  const file = utils.generateTempFilePath(url, 'html');
-
-  await genericCommand(async () => {
-    const links: HTMLElement[] = await crawler.querySelectorAll(url,
-      `${options && options.selector || ''} a`.trim(),
-      (elements: Element[]) => elements.map((element) => ({
-        href: element.getAttribute('href'),
-        text: element.textContent,
-        alt: element.getAttribute('alt'),
-        title: element.getAttribute('title'),
-      })));
-
-    await utils.writeFile(file, await utils.generateFileFromTemplate('table', links));
-    open (file);
-  });
-}
-
 export async function log(url: string, options: any): Promise<void> {
+  const crawler = new Crawler();
   const file = utils.generateTempFilePath(url, 'html');
 
-  await genericCommand(async () => {
-    const requests = await crawler.intercept(url, options?.response ? 'response' : 'request');
+  await genericCommand(crawler, async () => {
+    const items = await crawler.intercept(url, options?.responses ? 'response' : 'request');
     const urlObject = new URL(url);
 
-    await utils.writeFile(file, await utils.generateFileFromTemplate('table', requests.map((request) => ({
-      ...request,
-      external: !request.url.startsWith(urlObject.origin),
-    }))));
+    await utils.writeFile(file, await utils.generateFileFromTemplate('table', items.map((item) => {
+      if (options?.responses) {
+        const response = (item as puppeteer.HTTPResponse);
+
+        return {
+          'Url': response.url(),
+          'Status': response.status(),
+          'Status Text': response.statusText(),
+          'Content Type': response.headers()['content-type'],
+          'Cache': response.fromCache(),
+          'Service Worker': response.fromServiceWorker(),
+          'Success': response.ok(),
+          'Remote Address': `${response.remoteAddress().ip}${response.remoteAddress().port ? `:${response.remoteAddress().port}` : ''}`,
+          'External': !response.url().startsWith(urlObject.origin),
+        };
+      }
+      else {
+        const request = (item as puppeteer.HTTPRequest);
+
+        return {
+          'Url': request.url(),
+          'Method': request.method(),
+          'Resource Type': request.resourceType(),
+          'Post Data': JSON.stringify(request.postData()),
+          'External': !request.url().startsWith(urlObject.origin),
+        };
+      }
+    })));
     open (file);
   });
 }
 
 export async function pdf(url: string) {
+  const crawler = new Crawler();
   const file = utils.generateTempFilePath(url, 'pdf');
 
-  await genericCommand(async () => {
+  await genericCommand(crawler, async () => {
     await crawler.pdf(url, file);
     open(file);
   });
@@ -172,19 +231,41 @@ export async function robots(domain: string) {
   }
 }
 
-export async function screenshot(url: string) {
+export async function screenshot(url: string, options: any) {
+  const crawler = new Crawler({
+    defaultViewport: {
+      width: 1920,
+      height: 1080,
+    },
+  } as puppeteer.LaunchOptions);
   const file = utils.generateTempFilePath(url, 'png');
 
-  await genericCommand(async () => {
-    await crawler.screenshot(url, file);
+  await genericCommand(crawler, async () => {
+    await crawler.screenshot(url, file, {
+      fullPage: options?.fullPage,
+      omitBackground: options?.omitBackground,
+    });
     open(file);
   });
 }
 
+export async function security(url: string): Promise<void> {
+  const crawler = new Crawler();
+  const file = utils.generateTempFilePath(url, 'json');
+
+  await genericCommand(crawler, async () => {
+    const securityDetails: any = await crawler.security(url);
+
+    await utils.writeFile(file, JSON.stringify(securityDetails, null, 2));
+    open (file);
+  });
+}
+
 export async function source(url: string): Promise<void> {
+  const crawler = new Crawler();
   const file = utils.generateTempFilePath(url, 'txt');
 
-  await genericCommand(async () => {
+  await genericCommand(crawler, async () => {
     const html: string = await crawler.querySelector(url,
       'html',
       (element: Element) => element.outerHTML);
@@ -214,36 +295,11 @@ export function stack(domain: string, options: any): void {
   browse(url);
 }
 
-export async function text(url: string, options: any) {
-  const file = utils.generateTempFilePath(url, 'html');
-
-  await genericCommand(async () => {
-    const text: string = await crawler.querySelector(url,
-      `${options && options.selector || 'body'}`.trim(),
-      (element: any) => element.innerText);
-
-    if (options?.wordCloud) {
-      const wordCount = utils.countWords(text);
-      const wordCountArray = Object.keys(wordCount)
-        .map((word: string) => ({
-          word,
-          count: wordCount[word],
-        }));
-      await utils.writeFile(file, await utils.generateFileFromTemplate('cloud', wordCountArray));
-    }
-    else {
-      await utils.writeFile(file, text.replace(/\n/g, '<br>'));
-    }
-
-
-    open (file);
-  });
-}
-
 export async function trace(url: string) {
+  const crawler = new Crawler();
   const file = utils.generateTempFilePath(url, 'json');
 
-  await genericCommand(async () => {
+  await genericCommand(crawler, async () => {
     await crawler.trace(url, file);
     open(file);
   });
@@ -268,4 +324,18 @@ export function validate(url: string, options: any): void {
   }
 
   browse(url);
+}
+
+export async function whois(domain: string): Promise<void> {
+  try {
+    const info = await utils.execute(`whois ${domain}`);
+
+    console.log(info);
+  }
+  catch (error) {
+    console.error(error);
+  }
+  finally {
+    process.exit(0);
+  }
 }

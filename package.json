@@ -1,6 +1,6 @@
 {
   "name": "@nire0510/wmcli",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Useful tools for webmasters",
   "main": "./index.js",
   "preferGlobal": true,

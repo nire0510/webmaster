@@ -31,19 +31,31 @@ program
     .argument('<url>', 'web page url', validator.isUrl)
     .action(commands.archive);
 program
-    .command('headers')
-    .description('view web page text headers')
+    .command('audit')
+    .description('check website performance and SEO')
     .argument('<url>', 'web page url', validator.isUrl)
-    .option('-s, --selector [selector]', 'wrapper css selector')
-    .action(commands.headers);
+    .option('-ps --pagespeed', 'use google pagespeed')
+    .option('-so --seoptimer', 'use seoptimer')
+    .action(commands.audit);
 program
-    .command('images')
-    .description('view web page images')
+    .command('coverage')
+    .description('view javascript and css usage coverage')
+    .argument('<url>', 'web page url', validator.isUrl)
+    .option('-js, --javascript', 'javascript files coverage (default)')
+    .option('-css, --stylesheet', 'stylesheet files coverage')
+    .action(commands.coverage);
+program
+    .command('extract')
+    .description('extract elements from a web page')
     .argument('<url>', 'web page url', validator.isUrl)
     .option('-s, --selector [selector]', 'wrapper css selector')
-    .option('-g, --gallery', 'display images as gallery')
-    .option('-t, --table', 'display images in table (default')
-    .action(commands.images);
+    .option('-h, --headers', 'extract headers')
+    .option('-l, --links', 'extract links')
+    .option('-i, --images', 'extract images and display as table')
+    .option('-ig, --images-gallery', 'extract images and display as gallery')
+    .option('-t, --text', 'extract text (default)')
+    .option('-tc, --text-cloud', 'extract text and display as word cloud')
+    .action(commands.extract);
 program
     .command('ip')
     .description('get website IP address')
@@ -58,25 +70,12 @@ program
     .option('-wm, --wmtips', 'use wmtips (default)')
     .action(commands.info);
 program
-    .command('links')
-    .description('view web page links')
-    .argument('<url>', 'web page url', validator.isUrl)
-    .option('-s --selector [selector]', 'wrapper css selector')
-    .action(commands.links);
-program
     .command('log')
     .description('log web page activity')
     .argument('<url>', 'web page url', validator.isUrl)
-    .option('-req --requests', 'log http requests')
+    .option('-req --requests', 'log http requests (default)')
     .option('-res --responses', 'log http responses')
     .action(commands.log);
-program
-    .command('audit')
-    .description('check website performance and SEO')
-    .argument('<url>', 'web page url', validator.isUrl)
-    .option('-ps --pagespeed', 'use google pagespeed')
-    .option('-so --seoptimer', 'use seoptimer')
-    .action(commands.audit);
 program
     .command('pdf')
     .description('create a PDF')
@@ -91,12 +90,19 @@ program
     .command('screenshot')
     .description('take a screenshot')
     .argument('<url>', 'web page url', validator.isUrl)
+    .option('-f, --full-page', 'capture full page')
+    .option('-o, --omit-background', 'omit background from screenshot')
     .action(commands.screenshot);
 program
     .command('source')
     .description('view web page source')
     .argument('<url>', 'web page url', validator.isUrl)
     .action(commands.source);
+program
+    .command('security')
+    .description('view web page security details')
+    .argument('<url>', 'web page url', validator.isUrl)
+    .action(commands.security);
 program
     .command('stack')
     .description('view website technologies')
@@ -106,13 +112,6 @@ program
     .option('-st, --similartech', 'use similartech')
     .option('-wa, --wappalyzer', 'use wappalyzer')
     .action(commands.stack);
-program
-    .command('text')
-    .description('view web page text')
-    .argument('<url>', 'web page url', validator.isUrl)
-    .option('-s, --selector [selector]', 'wrapper css selector')
-    .option('-wc, --word-cloud', 'display as word cloud')
-    .action(commands.text);
 program
     .command('trace')
     .description('trace web page loading')
@@ -128,4 +127,9 @@ program
     .option('-l, --links', 'broken links checker')
     .option('-s, --structured', 'sturctured data')
     .action(commands.validate);
+program
+    .command('whois')
+    .description('view domain information')
+    .argument('<domain>', 'website domain name', validator.isHostname)
+    .action(commands.whois);
 program.parse(process.argv);

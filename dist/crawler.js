@@ -14,19 +14,18 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const puppeteer_1 = __importDefault(require("puppeteer"));
 class Crawler {
-    constructor(headless = true) {
+    constructor(options = {}) {
         this.ready = false;
-        this.headless = headless;
-        this.init();
+        this.init(options);
     }
     deconstructor() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.browser.close();
         });
     }
-    init() {
+    init(options = {}) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.browser = yield puppeteer_1.default.launch();
+            this.browser = yield puppeteer_1.default.launch(options);
             this.ready = true;
         });
     }
@@ -54,36 +53,27 @@ class Crawler {
             });
         });
     }
+    coverage(url, type) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const items = yield this.genericCommand((page) => __awaiter(this, void 0, void 0, function* () {
+                yield page.coverage[type === 'css' ? 'startCSSCoverage' : 'startJSCoverage']();
+                yield page.goto(url, { waitUntil: 'networkidle2' });
+                return yield page.coverage[type === 'css' ? 'stopCSSCoverage' : 'stopJSCoverage']();
+            }));
+            return items;
+        });
+    }
     intercept(url, type) {
         return __awaiter(this, void 0, void 0, function* () {
             const items = yield this.genericCommand((page) => __awaiter(this, void 0, void 0, function* () {
                 const items = [];
-                yield page.setRequestInterception(true);
-                switch (type) {
-                    case 'response':
-                        page.on('response', (response) => __awaiter(this, void 0, void 0, function* () {
-                            items.push({
-                                url: response.url(),
-                                status: response.status(),
-                                statusText: response.statusText(),
-                                headers: response.headers(),
-                            });
-                        }));
-                        break;
-                    case 'request':
-                    default:
-                        page.on('request', (request) => __awaiter(this, void 0, void 0, function* () {
-                            items.push({
-                                url: request.url(),
-                                method: request.method(),
-                                headers: request.headers(),
-                                resourceType: request.resourceType(),
-                                postData: request.postData(),
-                            });
-                            return request.continue();
-                        }));
-                        break;
-                }
+                type === 'request' && (yield page.setRequestInterception(true));
+                page.on(type, (item) => __awaiter(this, void 0, void 0, function* () {
+                    items.push(item);
+                    if (typeof item.continue === 'function') {
+                        item.continue();
+                    }
+                }));
                 yield page.goto(url, { waitUntil: 'networkidle2' });
                 return items;
             }));
@@ -136,12 +126,32 @@ class Crawler {
             }
         });
     }
-    screenshot(url, path) {
+    screenshot(url, path, options = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.genericCommand((page) => __awaiter(this, void 0, void 0, function* () {
                 yield page.goto(url, { waitUntil: 'networkidle2' });
-                yield page.screenshot({ path });
+                yield page.screenshot(Object.assign({ path }, options));
             }));
+        });
+    }
+    security(url) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const details = yield this.genericCommand((page) => __awaiter(this, void 0, void 0, function* () {
+                const response = yield page.goto(url);
+                const securityDetails = response.securityDetails();
+                if (securityDetails) {
+                    return {
+                        issuer: securityDetails.issuer(),
+                        protocol: securityDetails.protocol(),
+                        subjectAlternativeNames: securityDetails.subjectAlternativeNames().join(', '),
+                        subjectName: securityDetails.subjectName(),
+                        validFrom: new Date(securityDetails.validFrom() * 1000),
+                        validTo: new Date(securityDetails.validTo() * 1000),
+                    };
+                }
+                return {};
+            }));
+            return details;
         });
     }
     trace(url, path) {

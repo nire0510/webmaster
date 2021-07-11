@@ -31,14 +31,6 @@ export async function generateFileFromTemplate(template: string, data: any[] = [
   return markup.replace('[]', JSON.stringify(data));
 }
 
-export function toTable(data: any[]) {
-  const headers = Object.keys(data[0]).map((key: string) => `<th>${key}</th>`).join('');
-  const rows = data.map((item: any) => `<tr>` + Object.keys(item).map((key: string) => `<td>${item[key]}</td>`).join('') + `</tr>`).join('');
-
-  return `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
-
-}
-
 export async function isUrlExists(input: string, dummyPrevious: any): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     https

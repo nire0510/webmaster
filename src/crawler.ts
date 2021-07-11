@@ -2,20 +2,18 @@ import puppeteer from 'puppeteer';
 
 export default class Crawler {
   browser: any;
-  headless: boolean;
   ready: boolean = false;
 
-  constructor(headless: boolean = true) {
-    this.headless = headless;
-    this.init();
+  constructor(options: puppeteer.LaunchOptions = {}) {
+    this.init(options);
   }
 
   async deconstructor() {
     await this.browser.close();
   }
 
-  async init() {
-    this.browser = await puppeteer.launch();
+  async init(options: puppeteer.LaunchOptions = {}) {
+    this.browser = await puppeteer.launch(options);
     this.ready = true;
   }
 
@@ -46,37 +44,29 @@ export default class Crawler {
     });
   }
 
-  async intercept(url: string, type: string): Promise<any[]> {
+  async coverage(url: string, type: string) {
+    const items = await this.genericCommand(async (page: puppeteer.Page) => {
+      await page.coverage[type === 'css' ? 'startCSSCoverage' : 'startJSCoverage']();
+      await page.goto(url, { waitUntil: 'networkidle2' });
+
+      return await page.coverage[type === 'css' ? 'stopCSSCoverage' : 'stopJSCoverage']();
+    });
+
+    return items;
+  }
+
+  async intercept(url: string, type: any): Promise<any[]> {
     const items = await this.genericCommand(async (page: puppeteer.Page) => {
       const items: any[] = [];
 
-      await page.setRequestInterception(true);
-      switch (type) {
-        case 'response':
-          page.on('response', async (response: puppeteer.HTTPResponse) => {
-            items.push({
-              url: response.url(),
-              status: response.status(),
-              statusText: response.statusText(),
-              headers: response.headers(),
-            });
-          })
-          break;
-        case 'request':
-        default:
-          page.on('request', async (request: puppeteer.HTTPRequest) => {
-            items.push({
-              url: request.url(),
-              method: request.method(),
-              headers: request.headers(),
-              resourceType: request.resourceType(),
-              postData: request.postData(),
-            });
+      type === 'request' && await page.setRequestInterception(true);
+      page.on(type, async (item: any) => {
+        items.push(item);
 
-            return request.continue();
-          });
-          break;
-      }
+        if (typeof item.continue === 'function') {
+          item.continue();
+        }
+      });
       await page.goto(url, { waitUntil: 'networkidle2' });
 
       return items;
@@ -132,11 +122,36 @@ export default class Crawler {
     }
   }
 
-  async screenshot(url: string, path: string) {
+  async screenshot(url: string, path: string, options: puppeteer.ScreenshotOptions = {}) {
     await this.genericCommand(async (page: puppeteer.Page) => {
       await page.goto(url, { waitUntil: 'networkidle2' });
-      await page.screenshot({ path });
+      await page.screenshot({
+        path,
+        ...options
+      });
     });
+  }
+
+  async security(url: string): Promise<any> {
+    const details = await this.genericCommand(async (page: puppeteer.Page) => {
+      const response = await page.goto(url);
+      const securityDetails = response.securityDetails();
+
+      if (securityDetails) {
+        return {
+          issuer: securityDetails.issuer(),
+          protocol: securityDetails.protocol(),
+          subjectAlternativeNames: securityDetails.subjectAlternativeNames().join(', '),
+          subjectName: securityDetails.subjectName(),
+          validFrom: new Date(securityDetails.validFrom() * 1000),
+          validTo: new Date(securityDetails.validTo() * 1000),
+        }
+      }
+
+      return {};
+    });
+
+    return details;
   }
 
   async trace(url: string, path: string) {

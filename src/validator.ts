@@ -1,6 +1,6 @@
 import commander from 'commander';
 
-export function isHostname(input: string, dummyPrevious: any): string {
+export function isHostname(input: string): string {
   if (!/^\w+\.\w+(\.\w+)?$/.test(input)) {
     throw new commander.InvalidOptionArgumentError('Not a valid hostname, e.g. google.com');
   }
@@ -8,9 +8,9 @@ export function isHostname(input: string, dummyPrevious: any): string {
   return input;
 }
 
-export function isUrl(input: string, dummyPrevious: any): string {
+export function isUrl(input: string): string {
   if (!/^https?:\/\//.test(input)) {
-    throw new commander.InvalidOptionArgumentError('Not a valid url');
+    return `https://${input}`;
   }
 
   return input;

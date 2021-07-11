@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.countWords = exports.execute = exports.writeFile = exports.isUrlExists = exports.toTable = exports.generateFileFromTemplate = exports.generateTempFilePath = void 0;
+exports.countWords = exports.execute = exports.writeFile = exports.isUrlExists = exports.generateFileFromTemplate = exports.generateTempFilePath = void 0;
 const fs_1 = __importDefault(require("fs"));
 const child_process_1 = require("child_process");
 const https_1 = __importDefault(require("https"));
@@ -44,12 +44,6 @@ function generateFileFromTemplate(template, data = []) {
     });
 }
 exports.generateFileFromTemplate = generateFileFromTemplate;
-function toTable(data) {
-    const headers = Object.keys(data[0]).map((key) => `<th>${key}</th>`).join('');
-    const rows = data.map((item) => `<tr>` + Object.keys(item).map((key) => `<td>${item[key]}</td>`).join('') + `</tr>`).join('');
-    return `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
-}
-exports.toTable = toTable;
 function isUrlExists(input, dummyPrevious) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {

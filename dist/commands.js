@@ -31,17 +31,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validate = exports.trace = exports.text = exports.stack = exports.source = exports.screenshot = exports.robots = exports.pdf = exports.log = exports.links = exports.ip = exports.info = exports.images = exports.headers = exports.audit = exports.archive = void 0;
+exports.whois = exports.validate = exports.trace = exports.stack = exports.source = exports.security = exports.screenshot = exports.robots = exports.pdf = exports.log = exports.ip = exports.info = exports.extract = exports.coverage = exports.audit = exports.archive = void 0;
 const open_1 = __importDefault(require("open"));
 const ora_1 = __importDefault(require("ora"));
 const crawler_1 = __importDefault(require("./crawler"));
 const utils = __importStar(require("./utils"));
-const crawler = new crawler_1.default();
 function browse(url) {
     open_1.default(url);
     process.exit(0);
 }
-function genericCommand(fnc) {
+function genericCommand(crawler, fnc) {
     return __awaiter(this, void 0, void 0, function* () {
         const spinner = ora_1.default('wait...');
         spinner.start();
@@ -77,42 +76,84 @@ function audit(url, options) {
     browse(url);
 }
 exports.audit = audit;
-function headers(url, options) {
+function coverage(url, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        const crawler = new crawler_1.default();
         const file = utils.generateTempFilePath(url, 'html');
-        yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
-            const headers = yield crawler.querySelectorAll(url, `${options && options.selector || ''} h1, h2, h3, h4, h5, h6`.trim(), (elements) => elements.map((element) => ({
-                tagName: element.tagName,
-                content: element.textContent,
-            })));
-            yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', headers));
+        yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
+            const coverage = yield crawler.coverage(url, (options === null || options === void 0 ? void 0 : options.stylesheet) ? 'css' : 'js');
+            const items = coverage.map((entry) => {
+                const item = {
+                    'URL': entry.url,
+                    'Total Bytes': entry.text.length,
+                    'Used Bytes': entry.ranges.reduce((a, c) => a + c.end - c.start - 1, 0),
+                    'Usage': 'N/A',
+                };
+                item['Usage'] = `${(item['Used Bytes'] / item['Total Bytes'] * 100).toFixed(2)}%`;
+                return item;
+            });
+            yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', items));
             open_1.default(file);
         }));
     });
 }
-exports.headers = headers;
-function images(url, options) {
+exports.coverage = coverage;
+function extract(url, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        const crawler = new crawler_1.default();
         const file = utils.generateTempFilePath(url, 'html');
-        yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
-            const images = yield crawler.querySelectorAll(url, `${options && options.selector || ''} img`.trim(), (elements) => elements.map((element) => ({
-                title: element.getAttribute('title'),
-                alt: element.getAttribute('alt'),
-                src: element.getAttribute('src'),
-            })));
-            if (options === null || options === void 0 ? void 0 : options.gallery) {
-                const html = images
-                    .map((image) => `<img src="${image.src.startsWith('http') ? '' : url}${image.src}" title="${image.title || image.alt}">`).join('');
-                yield utils.writeFile(file, html);
+        yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
+            if (options === null || options === void 0 ? void 0 : options.headers) {
+                const headers = yield crawler.querySelectorAll(url, `${options && options.selector || ''} h1, h2, h3, h4, h5, h6`.trim(), (elements) => elements.map((element) => ({
+                    'Tag Name': element.tagName,
+                    'Content': element.textContent,
+                })));
+                yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', headers));
             }
+            else if (options === null || options === void 0 ? void 0 : options.links) {
+                const links = yield crawler.querySelectorAll(url, `${options && options.selector || ''} a`.trim(), (elements) => elements.map((element) => ({
+                    'Href': element.getAttribute('href'),
+                    'Text': element.textContent,
+                    'Title': element.getAttribute('title'),
+                })));
+                yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', links));
+            }
+            else if ((options === null || options === void 0 ? void 0 : options.images) || (options === null || options === void 0 ? void 0 : options.imagesGallery)) {
+                const images = yield crawler.querySelectorAll(url, `${options && options.selector || ''} img`.trim(), (elements) => elements.map((element) => ({
+                    'Title': element.getAttribute('title'),
+                    'Alternate Text': element.getAttribute('alt'),
+                    'Source': element.getAttribute('src'),
+                })));
+                if (options === null || options === void 0 ? void 0 : options.imagesGallery) {
+                    const html = images
+                        .map((image) => `<img src="${image['Source'].startsWith('http') ? '' : url}${image['Source']}" title="${image['Title'] || image['Alternate Text']}">`).join('');
+                    yield utils.writeFile(file, html);
+                }
+                else {
+                    yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', images));
+                }
+            }
+            // text
             else {
-                yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', images));
+                const text = yield crawler.querySelector(url, `${options && options.selector || 'body'}`.trim(), (element) => element.innerText);
+                if (options === null || options === void 0 ? void 0 : options.textCloud) {
+                    const wordCount = utils.countWords(text);
+                    const wordCountArray = Object.keys(wordCount)
+                        .map((word) => ({
+                        word,
+                        count: wordCount[word],
+                    }));
+                    yield utils.writeFile(file, yield utils.generateFileFromTemplate('cloud', wordCountArray));
+                }
+                else {
+                    yield utils.writeFile(file, text.replace(/\n/g, '<br>'));
+                }
             }
             open_1.default(file);
         }));
     });
 }
-exports.images = images;
+exports.extract = extract;
 function info(domain, options) {
     let url;
     if (options === null || options === void 0 ? void 0 : options.similarweb) {
@@ -142,29 +183,39 @@ function ip(domain) {
     });
 }
 exports.ip = ip;
-function links(url, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const file = utils.generateTempFilePath(url, 'html');
-        yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
-            const links = yield crawler.querySelectorAll(url, `${options && options.selector || ''} a`.trim(), (elements) => elements.map((element) => ({
-                href: element.getAttribute('href'),
-                text: element.textContent,
-                alt: element.getAttribute('alt'),
-                title: element.getAttribute('title'),
-            })));
-            yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', links));
-            open_1.default(file);
-        }));
-    });
-}
-exports.links = links;
 function log(url, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        const crawler = new crawler_1.default();
         const file = utils.generateTempFilePath(url, 'html');
-        yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
-            const requests = yield crawler.intercept(url, (options === null || options === void 0 ? void 0 : options.response) ? 'response' : 'request');
+        yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
+            const items = yield crawler.intercept(url, (options === null || options === void 0 ? void 0 : options.responses) ? 'response' : 'request');
             const urlObject = new URL(url);
-            yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', requests.map((request) => (Object.assign(Object.assign({}, request), { external: !request.url.startsWith(urlObject.origin) })))));
+            yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', items.map((item) => {
+                if (options === null || options === void 0 ? void 0 : options.responses) {
+                    const response = item;
+                    return {
+                        'Url': response.url(),
+                        'Status': response.status(),
+                        'Status Text': response.statusText(),
+                        'Content Type': response.headers()['content-type'],
+                        'Cache': response.fromCache(),
+                        'Service Worker': response.fromServiceWorker(),
+                        'Success': response.ok(),
+                        'Remote Address': `${response.remoteAddress().ip}${response.remoteAddress().port ? `:${response.remoteAddress().port}` : ''}`,
+                        'External': !response.url().startsWith(urlObject.origin),
+                    };
+                }
+                else {
+                    const request = item;
+                    return {
+                        'Url': request.url(),
+                        'Method': request.method(),
+                        'Resource Type': request.resourceType(),
+                        'Post Data': JSON.stringify(request.postData()),
+                        'External': !request.url().startsWith(urlObject.origin),
+                    };
+                }
+            })));
             open_1.default(file);
         }));
     });
@@ -172,8 +223,9 @@ function log(url, options) {
 exports.log = log;
 function pdf(url) {
     return __awaiter(this, void 0, void 0, function* () {
+        const crawler = new crawler_1.default();
         const file = utils.generateTempFilePath(url, 'pdf');
-        yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
+        yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
             yield crawler.pdf(url, file);
             open_1.default(file);
         }));
@@ -194,20 +246,42 @@ function robots(domain) {
     });
 }
 exports.robots = robots;
-function screenshot(url) {
+function screenshot(url, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        const crawler = new crawler_1.default({
+            defaultViewport: {
+                width: 1920,
+                height: 1080,
+            },
+        });
         const file = utils.generateTempFilePath(url, 'png');
-        yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
-            yield crawler.screenshot(url, file);
+        yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
+            yield crawler.screenshot(url, file, {
+                fullPage: options === null || options === void 0 ? void 0 : options.fullPage,
+                omitBackground: options === null || options === void 0 ? void 0 : options.omitBackground,
+            });
             open_1.default(file);
         }));
     });
 }
 exports.screenshot = screenshot;
+function security(url) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const crawler = new crawler_1.default();
+        const file = utils.generateTempFilePath(url, 'json');
+        yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
+            const securityDetails = yield crawler.security(url);
+            yield utils.writeFile(file, JSON.stringify(securityDetails, null, 2));
+            open_1.default(file);
+        }));
+    });
+}
+exports.security = security;
 function source(url) {
     return __awaiter(this, void 0, void 0, function* () {
+        const crawler = new crawler_1.default();
         const file = utils.generateTempFilePath(url, 'txt');
-        yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
+        yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
             const html = yield crawler.querySelector(url, 'html', (element) => element.outerHTML);
             yield utils.writeFile(file, html);
             open_1.default(file);
@@ -233,32 +307,11 @@ function stack(domain, options) {
     browse(url);
 }
 exports.stack = stack;
-function text(url, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const file = utils.generateTempFilePath(url, 'html');
-        yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
-            const text = yield crawler.querySelector(url, `${options && options.selector || 'body'}`.trim(), (element) => element.innerText);
-            if (options === null || options === void 0 ? void 0 : options.wordCloud) {
-                const wordCount = utils.countWords(text);
-                const wordCountArray = Object.keys(wordCount)
-                    .map((word) => ({
-                    word,
-                    count: wordCount[word],
-                }));
-                yield utils.writeFile(file, yield utils.generateFileFromTemplate('cloud', wordCountArray));
-            }
-            else {
-                yield utils.writeFile(file, text.replace(/\n/g, '<br>'));
-            }
-            open_1.default(file);
-        }));
-    });
-}
-exports.text = text;
 function trace(url) {
     return __awaiter(this, void 0, void 0, function* () {
+        const crawler = new crawler_1.default();
         const file = utils.generateTempFilePath(url, 'json');
-        yield genericCommand(() => __awaiter(this, void 0, void 0, function* () {
+        yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
             yield crawler.trace(url, file);
             open_1.default(file);
         }));
@@ -285,3 +338,18 @@ function validate(url, options) {
     browse(url);
 }
 exports.validate = validate;
+function whois(domain) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const info = yield utils.execute(`whois ${domain}`);
+            console.log(info);
+        }
+        catch (error) {
+            console.error(error);
+        }
+        finally {
+            process.exit(0);
+        }
+    });
+}
+exports.whois = whois;
