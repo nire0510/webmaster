@@ -44,12 +44,15 @@ function generateFileFromTemplate(template, data = []) {
     });
 }
 exports.generateFileFromTemplate = generateFileFromTemplate;
-function isUrlExists(input, dummyPrevious) {
+function isUrlExists(input) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise((resolve, reject) => {
             https_1.default
-                .request(input, { method: 'HEAD' }, ( /* res */) => {
-                resolve(input);
+                .request(input, { method: 'HEAD' }, (res) => {
+                if (res && res.statusCode && (res.statusCode >= 200 && res.statusCode < 400)) {
+                    return resolve(true);
+                }
+                return resolve(false);
             })
                 .on('error', (err) => {
                 reject(err);

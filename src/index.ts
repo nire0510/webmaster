@@ -78,6 +78,12 @@ program
   .action(commands.robots);
 
 program
+  .command('rss')
+  .description('view domain rss feed')
+  .argument('<domain>', 'website domain name', validator.isHostname)
+  .action(commands.rss);
+
+program
   .command('screenshot')
   .description('take a screenshot')
   .argument('<url>', 'web page url', validator.isUrl)
@@ -93,8 +99,8 @@ program
 
 program
   .command('security')
-  .description('view web page security details')
-  .argument('<url>', 'web page url', validator.isUrl)
+  .description('view website security details')
+  .argument('<domain>', 'website domain name', validator.isHostname)
   .action(commands.security);
 
 program

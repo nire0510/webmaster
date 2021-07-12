@@ -3,7 +3,7 @@ import { exec } from 'child_process';
 import https from 'https';
 import os from 'os';
 
-function readFile(file: string) {
+function readFile(file: string): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     fs.readFile(file, 'utf8', function (error, content) {
       if (error) {
@@ -31,11 +31,15 @@ export async function generateFileFromTemplate(template: string, data: any[] = [
   return markup.replace('[]', JSON.stringify(data));
 }
 
-export async function isUrlExists(input: string, dummyPrevious: any): Promise<string> {
-  return new Promise<string>((resolve, reject) => {
+export async function isUrlExists(input: string): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
     https
-      .request(input, { method: 'HEAD' }, (/* res */) => {
-        resolve(input);
+      .request(input, { method: 'HEAD' }, (res) => {
+        if (res && res.statusCode && (res.statusCode >=  200 && res.statusCode < 400)) {
+          return resolve(true);
+        }
+
+        return resolve(false);
       })
       .on('error', (err) => {
         reject(err);
@@ -53,7 +57,7 @@ export async function writeFile(file: string, content: string): Promise<string> 
 
       resolve(file);
     });
-  })
+  });
 }
 
 export function execute(command: string): Promise<string> {
@@ -65,7 +69,7 @@ export function execute(command: string): Promise<string> {
 
       return resolve(stdout);
     });
-  })
+  });
 }
 
 export function countWords(content: string): { [key: string]: number } {

@@ -31,31 +31,44 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.whois = exports.validate = exports.trace = exports.stack = exports.source = exports.security = exports.screenshot = exports.robots = exports.pdf = exports.log = exports.ip = exports.info = exports.extract = exports.coverage = exports.audit = exports.archive = void 0;
+exports.whois = exports.validate = exports.trace = exports.stack = exports.source = exports.security = exports.screenshot = exports.rss = exports.robots = exports.pdf = exports.log = exports.ip = exports.info = exports.extract = exports.coverage = exports.audit = exports.archive = void 0;
 const open_1 = __importDefault(require("open"));
 const ora_1 = __importDefault(require("ora"));
 const crawler_1 = __importDefault(require("./crawler"));
 const utils = __importStar(require("./utils"));
-function browse(url) {
-    open_1.default(url);
+const spinner = ora_1.default('wait...');
+function browse(url, options) {
+    if (typeof url === 'string') {
+        open_1.default(url);
+    }
+    else {
+        open_1.default(url[Object.keys(options)
+            .find((key) => Object.keys(url).includes(key)) || Object.keys(url)[0]]);
+    }
     process.exit(0);
+}
+function execute(command) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield genericCommand(null, () => __awaiter(this, void 0, void 0, function* () {
+            const info = yield utils.execute(command);
+            spinner.succeed(info);
+        }));
+    });
 }
 function genericCommand(crawler, fnc) {
     return __awaiter(this, void 0, void 0, function* () {
-        const spinner = ora_1.default('wait...');
         spinner.start();
         try {
             yield fnc();
         }
         catch (error) {
             // console.error(error);
-            console.error();
-            console.error('An error has occurred. Is URL correct?');
+            spinner.fail('An error has occurred. Is URL correct?');
             process.exit(0);
         }
         finally {
             spinner.stop();
-            yield crawler.deconstructor();
+            crawler && (yield crawler.deconstructor());
         }
     });
 }
@@ -66,14 +79,10 @@ function archive(url) {
 }
 exports.archive = archive;
 function audit(url, options) {
-    if (options === null || options === void 0 ? void 0 : options.seoptimer) {
-        url = `https://www.seoptimer.com/${url}`;
-    }
-    // pagespeed
-    else {
-        url = `https://developers.google.com/speed/pagespeed/insights/?url=${url}`;
-    }
-    browse(url);
+    browse({
+        pagespeed: `https://developers.google.com/speed/pagespeed/insights/?url=${url}`,
+        seoptimer: `https://www.seoptimer.com/${url}`,
+    }, options);
 }
 exports.audit = audit;
 function coverage(url, options) {
@@ -155,31 +164,16 @@ function extract(url, options) {
 }
 exports.extract = extract;
 function info(domain, options) {
-    let url;
-    if (options === null || options === void 0 ? void 0 : options.similarweb) {
-        url = `https://www.similarweb.com/website/${domain}`;
-    }
-    else if (options === null || options === void 0 ? void 0 : options.alexa) {
-        url = `https://www.alexa.com/siteinfo/${domain}`;
-    }
-    else {
-        url = `https://www.wmtips.com/tools/info/s/${domain}`;
-    }
-    browse(url);
+    browse({
+        wmtips: `https://www.wmtips.com/tools/info/s/${domain}`,
+        alexa: `https://www.alexa.com/siteinfo/${domain}`,
+        similarweb: `https://www.similarweb.com/website/${domain}`,
+    }, options);
 }
 exports.info = info;
 function ip(domain) {
     return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const ip = yield utils.execute(`dig +short ${domain} A`);
-            console.log(ip);
-        }
-        catch (error) {
-            console.error(error);
-        }
-        finally {
-            process.exit(0);
-        }
+        yield execute(`dig +short ${domain} A`);
     });
 }
 exports.ip = ip;
@@ -234,18 +228,52 @@ function pdf(url) {
 exports.pdf = pdf;
 function robots(domain) {
     return __awaiter(this, void 0, void 0, function* () {
-        const url = `https://${domain}/robots.txt`;
-        try {
-            yield utils.isUrlExists(url, null);
-            browse(url);
-        }
-        catch (error) {
-            console.log(`Domain name ${domain} does not exists`);
-            process.exit(0);
-        }
+        yield genericCommand(null, () => __awaiter(this, void 0, void 0, function* () {
+            const url = `https://${domain}/robots.txt`;
+            try {
+                const isUrlExists = yield utils.isUrlExists(url);
+                if (isUrlExists) {
+                    spinner.succeed(`robots.txt found: ${url}`);
+                    return browse(url);
+                }
+                spinner.warn(`robots.txt file could not be found for domain ${domain}`);
+            }
+            catch (error) {
+                spinner.fail(`Domain name ${domain} does not exists`);
+                process.exit(0);
+            }
+        }));
     });
 }
 exports.robots = robots;
+function rss(domain) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield genericCommand(null, () => __awaiter(this, void 0, void 0, function* () {
+            const crawler = new crawler_1.default();
+            const origin = `https://${domain}`;
+            const rss = yield crawler.querySelectorAll(origin, 'head > link[type="application/rss+xml"]', ([link]) => link ? link.getAttribute('href') : null);
+            if (rss && Array.isArray(rss) && rss.length) {
+                spinner.succeed(`RSS found: ${rss[0]}`);
+                browse(rss[0]);
+            }
+            else {
+                [
+                    `${origin}/feed`,
+                    `${origin}/feeds/posts/default`,
+                ].find((url) => __awaiter(this, void 0, void 0, function* () {
+                    const isUrlExists = yield utils.isUrlExists(url);
+                    if (isUrlExists) {
+                        spinner.succeed(`RSS found: ${url}`);
+                        browse(url);
+                        return true;
+                    }
+                    return false;
+                }));
+            }
+        }));
+    });
+}
+exports.rss = rss;
 function screenshot(url, options) {
     return __awaiter(this, void 0, void 0, function* () {
         const crawler = new crawler_1.default({
@@ -265,12 +293,13 @@ function screenshot(url, options) {
     });
 }
 exports.screenshot = screenshot;
-function security(url) {
+function security(domain) {
     return __awaiter(this, void 0, void 0, function* () {
         const crawler = new crawler_1.default();
-        const file = utils.generateTempFilePath(url, 'json');
+        const origin = `https://${domain}`;
+        const file = utils.generateTempFilePath(origin, 'json');
         yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
-            const securityDetails = yield crawler.security(url);
+            const securityDetails = yield crawler.security(origin);
             yield utils.writeFile(file, JSON.stringify(securityDetails, null, 2));
             open_1.default(file);
         }));
@@ -290,21 +319,12 @@ function source(url) {
 }
 exports.source = source;
 function stack(domain, options) {
-    let url;
-    if (options === null || options === void 0 ? void 0 : options.netcraft) {
-        url = `https://sitereport.netcraft.com/?url=${domain}`;
-    }
-    else if (options === null || options === void 0 ? void 0 : options.wappalyzer) {
-        url = `https://www.wappalyzer.com/lookup/${domain}`;
-    }
-    else if (options === null || options === void 0 ? void 0 : options.similartech) {
-        url = `https://www.similartech.com/websites/${domain}`;
-    }
-    // builtwith
-    else {
-        url = `https://builtwith.com/${domain}`;
-    }
-    browse(url);
+    browse({
+        builtwith: `https://builtwith.com/${domain}`,
+        netcraft: `https://sitereport.netcraft.com/?url=${domain}`,
+        similartech: `https://www.similartech.com/websites/${domain}`,
+        wappalyzer: `https://www.wappalyzer.com/lookup/${domain}`,
+    }, options);
 }
 exports.stack = stack;
 function trace(url) {
@@ -319,37 +339,18 @@ function trace(url) {
 }
 exports.trace = trace;
 function validate(url, options) {
-    if (options === null || options === void 0 ? void 0 : options.css) {
-        url = `https://jigsaw.w3.org/css-validator/validator?uri=${url}`;
-    }
-    else if (options === null || options === void 0 ? void 0 : options.i18n) {
-        url = `https://validator.w3.org/i18n-checker/check?uri=${url}`;
-    }
-    else if (options === null || options === void 0 ? void 0 : options.links) {
-        url = `https://validator.w3.org/checklink?uri=${url}`;
-    }
-    else if (options === null || options === void 0 ? void 0 : options.structured) {
-        url = `https://search.google.com/test/rich-results?utm_campaign=sdtt&utm_medium=message&url=${url}&user_agent=1`;
-    }
-    // html
-    else {
-        url = `https://validator.w3.org/nu/?doc=${url}`;
-    }
-    browse(url);
+    browse({
+        html: `https://validator.w3.org/nu/?doc=${url}`,
+        css: `https://jigsaw.w3.org/css-validator/validator?uri=${url}`,
+        i18n: `https://validator.w3.org/i18n-checker/check?uri=${url}`,
+        links: `https://validator.w3.org/checklink?uri=${url}`,
+        structured: `https://search.google.com/test/rich-results?utm_campaign=sdtt&utm_medium=message&url=${url}&user_agent=1`,
+    }, options);
 }
 exports.validate = validate;
 function whois(domain) {
     return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const info = yield utils.execute(`whois ${domain}`);
-            console.log(info);
-        }
-        catch (error) {
-            console.error(error);
-        }
-        finally {
-            process.exit(0);
-        }
+        yield execute(`whois ${domain}`);
     });
 }
 exports.whois = whois;

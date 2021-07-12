@@ -4,27 +4,41 @@ import puppeteer from 'puppeteer';
 import Crawler from './crawler';
 import * as utils from './utils';
 
-function browse(url: string): void {
-  open(url);
+const spinner = ora('wait...');
+
+function browse(url: string | any, options?: any): void {
+  if (typeof url === 'string') {
+    open(url);
+  }
+  else {
+    open(url[Object.keys(options)
+      .find((key) => Object.keys(url).includes(key)) || Object.keys(url)[0]]);
+  }
+
   process.exit(0);
 }
 
-async function genericCommand(crawler: Crawler, fnc: Function) {
-  const spinner = ora('wait...');
+async function execute(command: string): Promise<void> {
+  await genericCommand(null, async () => {
+    const info = await utils.execute(command);
 
+    spinner.succeed(info);
+  });
+}
+
+async function genericCommand(crawler: Crawler | null, fnc: any): Promise<void> {
   spinner.start();
   try {
     await fnc();
   }
   catch (error) {
     // console.error(error);
-    console.error();
-    console.error('An error has occurred. Is URL correct?');
+    spinner.fail('An error has occurred. Is URL correct?');
     process.exit(0);
   }
   finally {
     spinner.stop();
-    await crawler.deconstructor();
+    crawler && await crawler.deconstructor();
   }
 }
 
@@ -33,18 +47,13 @@ export async function archive(url: string): Promise<void> {
 }
 
 export function audit(url: string, options: any): void {
-  if (options?.seoptimer) {
-    url = `https://www.seoptimer.com/${url}`;
-  }
-  // pagespeed
-  else {
-    url = `https://developers.google.com/speed/pagespeed/insights/?url=${url}`;
-  }
-
-  browse(url);
+  browse({
+    pagespeed: `https://developers.google.com/speed/pagespeed/insights/?url=${url}`,
+    seoptimer: `https://www.seoptimer.com/${url}`,
+  }, options);
 }
 
-export async function coverage(url: string, options: any) {
+export async function coverage(url: string, options: any): Promise<void> {
   const crawler = new Crawler();
   const file = utils.generateTempFilePath(url, 'html');
 
@@ -57,7 +66,7 @@ export async function coverage(url: string, options: any) {
         'Total Bytes': entry.text.length,
         'Used Bytes': entry.ranges.reduce((a: number, c: any) => a + c.end - c.start - 1, 0),
         'Usage': 'N/A',
-      }
+      };
 
       item['Usage'] = `${(item['Used Bytes'] / item['Total Bytes'] * 100).toFixed(2)}%`;
 
@@ -69,7 +78,7 @@ export async function coverage(url: string, options: any) {
   });
 }
 
-export async function extract(url: string, options: any) {
+export async function extract(url: string, options: any): Promise<void> {
   const crawler = new Crawler();
   const file = utils.generateTempFilePath(url, 'html');
 
@@ -139,33 +148,15 @@ export async function extract(url: string, options: any) {
 }
 
 export function info(domain: string, options: any): void {
-  let url;
-
-  if (options?.similarweb) {
-    url = `https://www.similarweb.com/website/${domain}`;
-  }
-  else if (options?.alexa) {
-    url = `https://www.alexa.com/siteinfo/${domain}`;
-  }
-  else {
-    url = `https://www.wmtips.com/tools/info/s/${domain}`;
-  }
-
-  browse(url);
+  browse({
+    wmtips: `https://www.wmtips.com/tools/info/s/${domain}`,
+    alexa: `https://www.alexa.com/siteinfo/${domain}`,
+    similarweb: `https://www.similarweb.com/website/${domain}`,
+  }, options);
 }
 
 export async function ip(domain: string): Promise<void> {
-  try {
-    const ip = await utils.execute(`dig +short ${domain} A`);
-
-    console.log(ip);
-  }
-  catch (error) {
-    console.error(error);
-  }
-  finally {
-    process.exit(0);
-  }
+  await execute(`dig +short ${domain} A`);
 }
 
 export async function log(url: string, options: any): Promise<void> {
@@ -208,7 +199,7 @@ export async function log(url: string, options: any): Promise<void> {
   });
 }
 
-export async function pdf(url: string) {
+export async function pdf(url: string): Promise<void> {
   const crawler = new Crawler();
   const file = utils.generateTempFilePath(url, 'pdf');
 
@@ -218,20 +209,59 @@ export async function pdf(url: string) {
   });
 }
 
-export async function robots(domain: string) {
-  const url = `https://${domain}/robots.txt`;
+export async function robots(domain: string): Promise<void> {
+  await genericCommand(null, async () => {
+    const url = `https://${domain}/robots.txt`;
 
-  try {
-    await utils.isUrlExists(url, null);
-    browse(url);
-  }
-  catch (error) {
-    console.log(`Domain name ${domain} does not exists`);
-    process.exit(0);
-  }
+    try {
+      const isUrlExists = await utils.isUrlExists(url);
+
+      if (isUrlExists) {
+        spinner.succeed(`robots.txt found: ${url}`);
+
+        return browse(url);
+      }
+
+      spinner.warn(`robots.txt file could not be found for domain ${domain}`);
+    }
+    catch (error) {
+      spinner.fail(`Domain name ${domain} does not exists`);
+      process.exit(0);
+    }
+  });
 }
 
-export async function screenshot(url: string, options: any) {
+export async function rss(domain: string): Promise<void> {
+  await genericCommand(null, async () => {
+    const crawler = new Crawler();
+    const origin = `https://${domain}`;
+    const rss = await crawler.querySelectorAll(origin, 'head > link[type="application/rss+xml"]', ([link]: HTMLLinkElement[]) => link ? link.getAttribute('href') : null);
+
+    if (rss && Array.isArray(rss) && rss.length) {
+      spinner.succeed(`RSS found: ${rss[0]}`);
+      browse(rss[0]);
+    }
+    else {
+      [
+        `${origin}/feed`,
+        `${origin}/feeds/posts/default`,
+      ].find(async (url) => {
+        const isUrlExists = await utils.isUrlExists(url);
+
+        if (isUrlExists) {
+          spinner.succeed(`RSS found: ${url}`);
+          browse(url);
+
+          return true;
+        }
+
+        return false;
+      });
+    }
+  });
+}
+
+export async function screenshot(url: string, options: any): Promise<void> {
   const crawler = new Crawler({
     defaultViewport: {
       width: 1920,
@@ -249,12 +279,13 @@ export async function screenshot(url: string, options: any) {
   });
 }
 
-export async function security(url: string): Promise<void> {
+export async function security(domain: string): Promise<void> {
   const crawler = new Crawler();
-  const file = utils.generateTempFilePath(url, 'json');
+  const origin = `https://${domain}`;
+  const file = utils.generateTempFilePath(origin, 'json');
 
   await genericCommand(crawler, async () => {
-    const securityDetails: any = await crawler.security(url);
+    const securityDetails: any = await crawler.security(origin);
 
     await utils.writeFile(file, JSON.stringify(securityDetails, null, 2));
     open (file);
@@ -276,26 +307,15 @@ export async function source(url: string): Promise<void> {
 }
 
 export function stack(domain: string, options: any): void {
-  let url;
-
-  if (options?.netcraft) {
-    url = `https://sitereport.netcraft.com/?url=${domain}`;
-  }
-  else if (options?.wappalyzer) {
-    url = `https://www.wappalyzer.com/lookup/${domain}`;
-  }
-  else if (options?.similartech) {
-    url = `https://www.similartech.com/websites/${domain}`;
-  }
-  // builtwith
-  else {
-    url = `https://builtwith.com/${domain}`;
-  }
-
-  browse(url);
+  browse({
+    builtwith: `https://builtwith.com/${domain}`,
+    netcraft: `https://sitereport.netcraft.com/?url=${domain}`,
+    similartech: `https://www.similartech.com/websites/${domain}`,
+    wappalyzer: `https://www.wappalyzer.com/lookup/${domain}`,
+  }, options);
 }
 
-export async function trace(url: string) {
+export async function trace(url: string): Promise<void> {
   const crawler = new Crawler();
   const file = utils.generateTempFilePath(url, 'json');
 
@@ -305,37 +325,16 @@ export async function trace(url: string) {
   });
 }
 
-export function validate(url: string, options: any): void {
-  if (options?.css) {
-    url = `https://jigsaw.w3.org/css-validator/validator?uri=${url}`;
-  }
-  else if (options?.i18n) {
-    url = `https://validator.w3.org/i18n-checker/check?uri=${url}`;
-  }
-  else if (options?.links) {
-    url = `https://validator.w3.org/checklink?uri=${url}`;
-  }
-  else if (options?.structured) {
-    url = `https://search.google.com/test/rich-results?utm_campaign=sdtt&utm_medium=message&url=${url}&user_agent=1`;
-  }
-  // html
-  else {
-    url = `https://validator.w3.org/nu/?doc=${url}`;
-  }
-
-  browse(url);
+export function validate(url: string, options: { [key: string]: string }): void {
+  browse({
+    html: `https://validator.w3.org/nu/?doc=${url}`,
+    css: `https://jigsaw.w3.org/css-validator/validator?uri=${url}`,
+    i18n: `https://validator.w3.org/i18n-checker/check?uri=${url}`,
+    links: `https://validator.w3.org/checklink?uri=${url}`,
+    structured: `https://search.google.com/test/rich-results?utm_campaign=sdtt&utm_medium=message&url=${url}&user_agent=1`,
+  }, options);
 }
 
 export async function whois(domain: string): Promise<void> {
-  try {
-    const info = await utils.execute(`whois ${domain}`);
-
-    console.log(info);
-  }
-  catch (error) {
-    console.error(error);
-  }
-  finally {
-    process.exit(0);
-  }
+  await execute(`whois ${domain}`);
 }

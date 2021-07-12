@@ -2,31 +2,30 @@ import puppeteer from 'puppeteer';
 
 export default class Crawler {
   browser: any;
-  ready: boolean = false;
+  ready = false;
 
   constructor(options: puppeteer.LaunchOptions = {}) {
     this.init(options);
   }
 
-  async deconstructor() {
+  async deconstructor(): Promise<void> {
     await this.browser.close();
   }
 
-  async init(options: puppeteer.LaunchOptions = {}) {
+  async init(options: puppeteer.LaunchOptions = {}): Promise<void> {
     this.browser = await puppeteer.launch(options);
     this.ready = true;
   }
 
-  private isReady(): Promise<boolean> {
-    return new Promise(async (resolve) => {
-      while (!this.ready) {
-        await this.sleep(200);
-      }
+  private async isReady(): Promise<boolean> {
+    while (!this.ready) {
+      await this.sleep(200);
+    }
 
-      return resolve(true);
-    });
+    return true;
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   private async genericCommand(fnc: Function): Promise<any> {
     await this.isReady();
 
@@ -44,7 +43,7 @@ export default class Crawler {
     });
   }
 
-  async coverage(url: string, type: string) {
+  async coverage(url: string, type: string): Promise<any[]> {
     const items = await this.genericCommand(async (page: puppeteer.Page) => {
       await page.coverage[type === 'css' ? 'startCSSCoverage' : 'startJSCoverage']();
       await page.goto(url, { waitUntil: 'networkidle2' });
@@ -75,7 +74,7 @@ export default class Crawler {
     return items;
   }
 
-  async pdf(url: string, path: string) {
+  async pdf(url: string, path: string): Promise<void> {
     await this.genericCommand(async (page: puppeteer.Page) => {
       await page.goto(url, { waitUntil: 'networkidle2' });
       await page.pdf({ path, format: 'a4' });
@@ -122,7 +121,7 @@ export default class Crawler {
     }
   }
 
-  async screenshot(url: string, path: string, options: puppeteer.ScreenshotOptions = {}) {
+  async screenshot(url: string, path: string, options: puppeteer.ScreenshotOptions = {}): Promise<void> {
     await this.genericCommand(async (page: puppeteer.Page) => {
       await page.goto(url, { waitUntil: 'networkidle2' });
       await page.screenshot({
@@ -145,7 +144,7 @@ export default class Crawler {
           subjectName: securityDetails.subjectName(),
           validFrom: new Date(securityDetails.validFrom() * 1000),
           validTo: new Date(securityDetails.validTo() * 1000),
-        }
+        };
       }
 
       return {};
@@ -154,7 +153,7 @@ export default class Crawler {
     return details;
   }
 
-  async trace(url: string, path: string) {
+  async trace(url: string, path: string): Promise<void> {
     await this.genericCommand(async (page: puppeteer.Page) => {
       await page.tracing.start({ path });
       await page.goto(url);
