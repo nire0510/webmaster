@@ -24,9 +24,10 @@ Commands:
   log [options] <url>         log web page activity
   pdf <url>                   create a PDF
   robots <domain>             view domain robots.txt
+  rss <domain>                view domain rss feed
   screenshot [options] <url>  take a screenshot
   source <url>                view web page source
-  security <url>              view web page security details
+  security <domain>           view website security details
   stack [options] <domain>    view website technologies
   trace <url>                 trace web page loading
   validate [options] <url>    validate web page markup
