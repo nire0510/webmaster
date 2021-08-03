@@ -67,6 +67,7 @@ program
     .argument('<domain>', 'website domain name', validator.isHostname)
     .option('-al, --alexa', 'use alexa')
     .option('-sw, --similarweb', 'use similarweb')
+    .option('-w3, --w3techs', 'use w3techs')
     .option('-wm, --wmtips', 'use wmtips (default)')
     .action(commands.info);
 program

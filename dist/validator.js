@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.isUrl = exports.isHostname = void 0;
 const commander_1 = __importDefault(require("commander"));
 function isHostname(input) {
-    if (!/^\w+\.\w+(\.\w+)?$/.test(input)) {
+    if (!/^\w+\.\w+(\.\w+)?(\.\w+)?$/.test(input)) {
         throw new commander_1.default.InvalidOptionArgumentError('Not a valid hostname, e.g. google.com');
     }
     return input;

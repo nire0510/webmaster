@@ -113,7 +113,12 @@ function extract(url, options) {
         const file = utils.generateTempFilePath(url, 'html');
         yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
             if (options === null || options === void 0 ? void 0 : options.headers) {
-                const headers = yield crawler.querySelectorAll(url, `${options && options.selector || ''} h1, h2, h3, h4, h5, h6`.trim(), (elements) => elements.map((element) => ({
+                const headers = yield crawler.querySelectorAll(url, `${options && options.selector || ''} h1,
+        ${options && options.selector || ''} h2,
+        ${options && options.selector || ''} h3,
+        ${options && options.selector || ''} h4,
+        ${options && options.selector || ''} h5,
+        ${options && options.selector || ''} h6`.trim(), (elements) => elements.map((element) => ({
                     'Tag Name': element.tagName,
                     'Content': element.textContent,
                 })));
@@ -121,7 +126,7 @@ function extract(url, options) {
             }
             else if (options === null || options === void 0 ? void 0 : options.links) {
                 const links = yield crawler.querySelectorAll(url, `${options && options.selector || ''} a`.trim(), (elements) => elements.map((element) => ({
-                    'Href': element.getAttribute('href'),
+                    'Href': decodeURI(element.getAttribute('href') || ''),
                     'Text': element.textContent,
                     'Title': element.getAttribute('title'),
                 })));
@@ -168,6 +173,7 @@ function info(domain, options) {
         wmtips: `https://www.wmtips.com/tools/info/s/${domain}`,
         alexa: `https://www.alexa.com/siteinfo/${domain}`,
         similarweb: `https://www.similarweb.com/website/${domain}`,
+        w3techs: `https://w3techs.com/sites/info/${domain}`,
     }, options);
 }
 exports.info = info;

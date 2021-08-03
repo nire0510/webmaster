@@ -1,7 +1,7 @@
 import commander from 'commander';
 
 export function isHostname(input: string): string {
-  if (!/^\w+\.\w+(\.\w+)?$/.test(input)) {
+  if (!/^\w+\.\w+(\.\w+)?(\.\w+)?$/.test(input)) {
     throw new commander.InvalidOptionArgumentError('Not a valid hostname, e.g. google.com');
   }
 

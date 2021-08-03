@@ -30,13 +30,14 @@ class Crawler {
         });
     }
     isReady() {
-        return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+        return __awaiter(this, void 0, void 0, function* () {
             while (!this.ready) {
                 yield this.sleep(200);
             }
-            return resolve(true);
-        }));
+            return true;
+        });
     }
+    // eslint-disable-next-line @typescript-eslint/ban-types
     genericCommand(fnc) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.isReady();

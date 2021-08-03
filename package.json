@@ -1,6 +1,6 @@
 {
   "name": "@nire0510/wmcli",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Useful tools for webmasters",
   "main": "./index.js",
   "preferGlobal": true,
@@ -10,8 +10,8 @@
   "scripts": {
     "lint": "npx eslint src/**",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc -build tsconfig.json; cp -R templates ./dist;",
-    "prepublish": "npm run lint && npm run build"
+    "build": "tsc -build tsconfig.json; cp -R templates ./dist",
+    "prepublish": "npm run lint && npm run build; npm version patch"
   },
   "keywords": [
     "development",
