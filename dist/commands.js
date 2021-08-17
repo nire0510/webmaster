@@ -31,7 +31,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.whois = exports.validate = exports.trace = exports.stack = exports.source = exports.security = exports.screenshot = exports.rss = exports.robots = exports.pdf = exports.log = exports.ip = exports.info = exports.extract = exports.coverage = exports.audit = exports.archive = void 0;
+exports.whois = exports.validate = exports.translate = exports.trace = exports.stack = exports.source = exports.security = exports.screenshot = exports.rss = exports.robots = exports.pdf = exports.log = exports.ip = exports.info = exports.extract = exports.coverage = exports.audit = exports.archive = void 0;
 const open_1 = __importDefault(require("open"));
 const ora_1 = __importDefault(require("ora"));
 const crawler_1 = __importDefault(require("./crawler"));
@@ -113,12 +113,14 @@ function extract(url, options) {
         const file = utils.generateTempFilePath(url, 'html');
         yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
             if (options === null || options === void 0 ? void 0 : options.headers) {
-                const headers = yield crawler.querySelectorAll(url, `${options && options.selector || ''} h1,
-        ${options && options.selector || ''} h2,
-        ${options && options.selector || ''} h3,
-        ${options && options.selector || ''} h4,
-        ${options && options.selector || ''} h5,
-        ${options && options.selector || ''} h6`.trim(), (elements) => elements.map((element) => ({
+                const headers = yield crawler.querySelectorAll(url, [
+                    `${options && options.selector || ''} h1`.trim(),
+                    `${options && options.selector || ''} h2`.trim(),
+                    `${options && options.selector || ''} h3`.trim(),
+                    `${options && options.selector || ''} h4`.trim(),
+                    `${options && options.selector || ''} h5`.trim(),
+                    `${options && options.selector || ''} h6`.trim(),
+                ].join(','), (elements) => elements.map((element) => ({
                     'Tag Name': element.tagName,
                     'Content': element.textContent,
                 })));
@@ -344,6 +346,10 @@ function trace(url) {
     });
 }
 exports.trace = trace;
+function translate(url) {
+    browse(`https://translate.google.com/translate?sl=autoS&u=${url}`);
+}
+exports.translate = translate;
 function validate(url, options) {
     browse({
         html: `https://validator.w3.org/nu/?doc=${url}`,

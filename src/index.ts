@@ -121,6 +121,12 @@ program
   .action(commands.trace);
 
 program
+  .command('translate')
+  .description('translate web page')
+  .argument('<url>', 'web page url', validator.isUrl)
+  .action(commands.translate);
+
+program
   .command('validate')
   .description('validate web page markup')
   .argument('<url>', 'web page url', validator.isUrl)

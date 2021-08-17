@@ -85,12 +85,14 @@ export async function extract(url: string, options: any): Promise<void> {
   await genericCommand(crawler, async () => {
     if (options?.headers) {
       const headers: HTMLElement[] = await crawler.querySelectorAll(url,
-        `${options && options.selector || ''} h1,
-        ${options && options.selector || ''} h2,
-        ${options && options.selector || ''} h3,
-        ${options && options.selector || ''} h4,
-        ${options && options.selector || ''} h5,
-        ${options && options.selector || ''} h6`.trim(),
+        [
+          `${options && options.selector || ''} h1`.trim(),
+          `${options && options.selector || ''} h2`.trim(),
+          `${options && options.selector || ''} h3`.trim(),
+          `${options && options.selector || ''} h4`.trim(),
+          `${options && options.selector || ''} h5`.trim(),
+          `${options && options.selector || ''} h6`.trim(),
+        ].join(','),
         (elements: Element[]) => elements.map((element) => ({
           'Tag Name': element.tagName,
           'Content': element.textContent,
@@ -329,6 +331,10 @@ export async function trace(url: string): Promise<void> {
     await crawler.trace(url, file);
     open(file);
   });
+}
+
+export function translate(url: string): void {
+  browse(`https://translate.google.com/translate?sl=autoS&u=${url}`);
 }
 
 export function validate(url: string, options: { [key: string]: string }): void {

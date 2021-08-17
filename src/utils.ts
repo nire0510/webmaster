@@ -2,6 +2,7 @@ import fs from 'fs';
 import { exec } from 'child_process';
 import https from 'https';
 import os from 'os';
+import path from 'path';
 
 function readFile(file: string): Promise<string> {
   return new Promise<string>((resolve, reject) => {
@@ -26,7 +27,7 @@ export function generateTempFilePath(url: string, ext: string): string {
 }
 
 export async function generateFileFromTemplate(template: string, data: any[] = []): Promise<string> {
-  const markup = await readFile(`./templates/${template}.html`);
+  const markup = await readFile(path.resolve(`${__dirname}/templates/${template}.html`));
 
   return markup.replace('[]', JSON.stringify(data));
 }

@@ -17,6 +17,7 @@ const fs_1 = __importDefault(require("fs"));
 const child_process_1 = require("child_process");
 const https_1 = __importDefault(require("https"));
 const os_1 = __importDefault(require("os"));
+const path_1 = __importDefault(require("path"));
 function readFile(file) {
     return new Promise((resolve, reject) => {
         fs_1.default.readFile(file, 'utf8', function (error, content) {
@@ -39,7 +40,7 @@ function generateTempFilePath(url, ext) {
 exports.generateTempFilePath = generateTempFilePath;
 function generateFileFromTemplate(template, data = []) {
     return __awaiter(this, void 0, void 0, function* () {
-        const markup = yield readFile(`./templates/${template}.html`);
+        const markup = yield readFile(path_1.default.resolve(`${__dirname}/templates/${template}.html`));
         return markup.replace('[]', JSON.stringify(data));
     });
 }
