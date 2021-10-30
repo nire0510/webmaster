@@ -78,7 +78,7 @@ function writeFile(file, content) {
 exports.writeFile = writeFile;
 function execute(command) {
     return new Promise((resolve, reject) => {
-        child_process_1.exec(command, (error, stdout, stderr) => {
+        (0, child_process_1.exec)(command, (error, stdout, stderr) => {
             if (error) {
                 return reject(stderr);
             }

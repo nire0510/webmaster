@@ -36,13 +36,13 @@ const open_1 = __importDefault(require("open"));
 const ora_1 = __importDefault(require("ora"));
 const crawler_1 = __importDefault(require("./crawler"));
 const utils = __importStar(require("./utils"));
-const spinner = ora_1.default('wait...');
+const spinner = (0, ora_1.default)('wait...');
 function browse(url, options) {
     if (typeof url === 'string') {
-        open_1.default(url);
+        (0, open_1.default)(url);
     }
     else {
-        open_1.default(url[Object.keys(options)
+        (0, open_1.default)(url[Object.keys(options)
             .find((key) => Object.keys(url).includes(key)) || Object.keys(url)[0]]);
     }
     process.exit(0);
@@ -82,6 +82,7 @@ function audit(url, options) {
     browse({
         pagespeed: `https://developers.google.com/speed/pagespeed/insights/?url=${url}`,
         seoptimer: `https://www.seoptimer.com/${url}`,
+        yellowlab: `https://yellowlab.tools/?url=${encodeURIComponent(url)}`,
     }, options);
 }
 exports.audit = audit;
@@ -102,7 +103,7 @@ function coverage(url, options) {
                 return item;
             });
             yield utils.writeFile(file, yield utils.generateFileFromTemplate('table', items));
-            open_1.default(file);
+            (0, open_1.default)(file);
         }));
     });
 }
@@ -165,7 +166,7 @@ function extract(url, options) {
                     yield utils.writeFile(file, text.replace(/\n/g, '<br>'));
                 }
             }
-            open_1.default(file);
+            (0, open_1.default)(file);
         }));
     });
 }
@@ -218,7 +219,7 @@ function log(url, options) {
                     };
                 }
             })));
-            open_1.default(file);
+            (0, open_1.default)(file);
         }));
     });
 }
@@ -229,7 +230,7 @@ function pdf(url) {
         const file = utils.generateTempFilePath(url, 'pdf');
         yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
             yield crawler.pdf(url, file);
-            open_1.default(file);
+            (0, open_1.default)(file);
         }));
     });
 }
@@ -296,7 +297,7 @@ function screenshot(url, options) {
                 fullPage: options === null || options === void 0 ? void 0 : options.fullPage,
                 omitBackground: options === null || options === void 0 ? void 0 : options.omitBackground,
             });
-            open_1.default(file);
+            (0, open_1.default)(file);
         }));
     });
 }
@@ -309,7 +310,7 @@ function security(domain) {
         yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
             const securityDetails = yield crawler.security(origin);
             yield utils.writeFile(file, JSON.stringify(securityDetails, null, 2));
-            open_1.default(file);
+            (0, open_1.default)(file);
         }));
     });
 }
@@ -321,7 +322,7 @@ function source(url) {
         yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
             const html = yield crawler.querySelector(url, 'html', (element) => element.outerHTML);
             yield utils.writeFile(file, html);
-            open_1.default(file);
+            (0, open_1.default)(file);
         }));
     });
 }
@@ -341,7 +342,7 @@ function trace(url) {
         const file = utils.generateTempFilePath(url, 'json');
         yield genericCommand(crawler, () => __awaiter(this, void 0, void 0, function* () {
             yield crawler.trace(url, file);
-            open_1.default(file);
+            (0, open_1.default)(file);
         }));
     });
 }

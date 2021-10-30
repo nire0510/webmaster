@@ -50,6 +50,7 @@ export function audit(url: string, options: any): void {
   browse({
     pagespeed: `https://developers.google.com/speed/pagespeed/insights/?url=${url}`,
     seoptimer: `https://www.seoptimer.com/${url}`,
+    yellowlab: `https://yellowlab.tools/?url=${encodeURIComponent(url)}`,
   }, options);
 }
 

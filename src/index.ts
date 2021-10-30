@@ -5,7 +5,7 @@ import * as validator from './validator';
 const program = new Command();
 
 program
-  .version('0.0.1');
+  .version('1.1.1');
 
 program
   .command('archive')
@@ -19,6 +19,7 @@ program
   .argument('<url>', 'web page url', validator.isUrl)
   .option('-ps --pagespeed', 'use google pagespeed')
   .option('-so --seoptimer', 'use seoptimer')
+  .option('-yl --yellowlab', 'use yellow lab tools')
   .action(commands.audit);
 
 program

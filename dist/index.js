@@ -24,7 +24,7 @@ const commands = __importStar(require("./commands"));
 const validator = __importStar(require("./validator"));
 const program = new commander_1.Command();
 program
-    .version('0.0.1');
+    .version('1.1.0');
 program
     .command('archive')
     .description('view previous web page versions')
@@ -36,6 +36,7 @@ program
     .argument('<url>', 'web page url', validator.isUrl)
     .option('-ps --pagespeed', 'use google pagespeed')
     .option('-so --seoptimer', 'use seoptimer')
+    .option('-yl --yellowlab', 'use yellow lab tools')
     .action(commands.audit);
 program
     .command('coverage')
