@@ -24,7 +24,7 @@ const commands = __importStar(require("./commands"));
 const validator = __importStar(require("./validator"));
 const program = new commander_1.Command();
 program
-    .version('1.1.0');
+    .version('1.1.1');
 program
     .command('archive')
     .description('view previous web page versions')
