@@ -161,6 +161,7 @@ export function info(domain: string, options: any): void {
     alexa: `https://www.alexa.com/siteinfo/${domain}`,
     similarweb: `https://www.similarweb.com/website/${domain}`,
     w3techs: `https://w3techs.com/sites/info/${domain}`,
+    webtechsurvey: `https://webtechsurvey.com/website/${domain}`,
   }, options);
 }
 

@@ -56,6 +56,7 @@ program
   .option('-al, --alexa', 'use alexa')
   .option('-sw, --similarweb', 'use similarweb')
   .option('-w3, --w3techs', 'use w3techs')
+  .option('-wt, --webtechsurvey', 'use webtechsurvey')
   .option('-wm, --wmtips', 'use wmtips (default)')
   .action(commands.info);
 
